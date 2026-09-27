@@ -31,3 +31,4 @@ class DataProvider(ABC):
     @abstractmethod
     def get_detections(self) -> List[Detection]: pass
     def add_event(self, event: Event): pass
+    def get_map_state(self): pass

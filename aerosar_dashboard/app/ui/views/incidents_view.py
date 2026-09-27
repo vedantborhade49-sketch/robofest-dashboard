@@ -2,7 +2,7 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from app.ui.theme import Theme
 from app.services.data_service import DataService
 from app.models.incident import Incident
@@ -183,6 +183,8 @@ class IncidentsView(QWidget):
     3. Filter Bar (ALL, NEW, REVIEW, CONFIRMED, RESOLVED)
     4. Operational event generation and live polling
     """
+    navigate_to_map = Signal(Incident)
+
     def __init__(self):
         super().__init__()
         self.data_service = DataService()
@@ -263,6 +265,7 @@ class IncidentsView(QWidget):
             event_type="NAVIGATION",
             severity="INFO"
         )
+        self.navigate_to_map.emit(incident)
 
     def _on_generate_report(self, incident: Incident):
         self.data_service.log_event(
@@ -270,3 +273,9 @@ class IncidentsView(QWidget):
             event_type="SYSTEM",
             severity="WARNING"
         )
+
+    def select_incident_by_id(self, incident_id: str):
+        """Allows programmatic selection from map or other navigation triggers."""
+        match = self.data_service.get_incident(incident_id)
+        if match:
+            self.incident_list.select_incident(match)

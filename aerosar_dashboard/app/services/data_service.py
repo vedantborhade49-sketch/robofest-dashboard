@@ -34,6 +34,7 @@ class DataService:
         
     def get_events(self) -> List[Event]: return self._provider.get_events()
     def get_detections(self): return self._provider.get_detections()
+    def get_map_state(self): return self._provider.get_map_state()
     
     def add_event(self, event: Event):
         self._provider.add_event(event)

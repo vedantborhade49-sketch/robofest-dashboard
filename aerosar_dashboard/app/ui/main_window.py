@@ -14,6 +14,7 @@ from app.ui.views.telemetry_view import TelemetryView
 from app.ui.views.reports_view import ReportsView
 from app.ui.views.event_log_view import EventLogView
 from app.ui.views.settings_view import SettingsView
+from app.models.incident import Incident
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -63,22 +64,35 @@ class MainWindow(QMainWindow):
         # Connect signals
         self.sidebar.page_selected.connect(self._on_page_changed)
         
+        # Cross-view navigation connections
+        self.incidents_view.navigate_to_map.connect(self._on_navigate_to_map)
+        self.map_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
+
         # Set initial page
         self.sidebar.set_active_page(0)
         self._on_page_changed(0, "Overview")
         
     def _setup_views(self):
-        # Instantiate views and add to stacked widget
+        # Instantiate views and keep references
+        self.overview_view = OverviewView()
+        self.live_feed_view = LiveFeedView()
+        self.incidents_view = IncidentsView()
+        self.map_view = MapView()
+        self.telemetry_view = TelemetryView()
+        self.reports_view = ReportsView()
+        self.event_log_view = EventLogView()
+        self.settings_view = SettingsView()
+
         # Must match the order in Sidebar
         self.views = [
-            OverviewView(),
-            LiveFeedView(),
-            IncidentsView(),
-            MapView(),
-            TelemetryView(),
-            ReportsView(),
-            EventLogView(),
-            SettingsView()
+            self.overview_view,
+            self.live_feed_view,
+            self.incidents_view,
+            self.map_view,
+            self.telemetry_view,
+            self.reports_view,
+            self.event_log_view,
+            self.settings_view
         ]
         
         for view in self.views:
@@ -90,3 +104,15 @@ class MainWindow(QMainWindow):
         
         # Update header
         self.header.set_page_title(page_name)
+
+    def _on_navigate_to_map(self, incident: Incident):
+        """Cross-page action: Focuses selected incident on the Mission Map."""
+        self.sidebar.set_active_page(3)
+        self._on_page_changed(3, "Map")
+        self.map_view.select_incident(incident.incident_id)
+
+    def _on_navigate_to_incidents(self, incident_id: str):
+        """Cross-page action: Opens selected map incident in Incidents View."""
+        self.sidebar.set_active_page(2)
+        self._on_page_changed(2, "Incidents")
+        self.incidents_view.select_incident_by_id(incident_id)
