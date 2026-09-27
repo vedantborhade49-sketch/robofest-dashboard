@@ -5,3 +5,4 @@ class AIStatus(BaseModel):
     model_name: str
     inference_fps: float
     detections_count: int
+    device: str = "MOCK / CPU"

@@ -1,23 +1,56 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PySide6.QtCore import Qt
-from app.ui.theme import Theme
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PySide6.QtCore import Qt, QTimer
+from app.services.data_service import DataService
+from app.ui.widgets.incidents_panels import (
+    IncidentCountersPanel, IncidentListPanel, IncidentDetailPanel, IncidentFilterPanel
+)
 
 class IncidentsView(QWidget):
     def __init__(self):
         super().__init__()
+        self.data_service = DataService()
         self._setup_ui()
+        self._start_updates()
         
     def _setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(24, 24, 24, 24)
+        self.layout.setSpacing(16)
         
-        title = QLabel("INCIDENTS")
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 24px; font-weight: bold; letter-spacing: 2px;")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.counters = IncidentCountersPanel()
+        self.layout.addWidget(self.counters)
         
-        desc = QLabel("Detected incidents and evidence.")
-        desc.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
-        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_h = QHBoxLayout()
+        main_h.setSpacing(16)
         
-        layout.addWidget(title)
-        layout.addWidget(desc)
+        self.list_panel = IncidentListPanel()
+        self.detail_panel = IncidentDetailPanel()
+        
+        main_h.addWidget(self.list_panel, 1) # ~40% width
+        main_h.addWidget(self.detail_panel, 2) # ~60% width
+        
+        self.layout.addLayout(main_h, 1) # Expands
+        
+        self.filter_panel = IncidentFilterPanel()
+        self.layout.addWidget(self.filter_panel)
+        
+        # Connections
+        self.list_panel.incident_selected.connect(self.detail_panel.show_incident)
+        self.filter_panel.filter_changed.connect(self.list_panel.apply_filter)
+        
+    def _start_updates(self):
+        # Initial load (in a real app, this might poll slowly or subscribe to signals)
+        self._fetch_and_update_data()
+        
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._fetch_and_update_data)
+        self.timer.start(5000) # Only refresh every 5 seconds to not interrupt user selection
+        
+    def _fetch_and_update_data(self):
+        incidents = self.data_service.get_incidents()
+        self.counters.update_counts(incidents)
+        # Avoid redrawing the whole list if lengths match, to prevent selection reset (simple heuristic for mock UI)
+        if len(self.list_panel.incidents) != len(incidents):
+            self.list_panel.update_data(incidents)
+        elif not self.list_panel.incidents:
+            self.list_panel.update_data(incidents)

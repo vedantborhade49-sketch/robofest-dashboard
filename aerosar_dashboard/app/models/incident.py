@@ -9,6 +9,7 @@ class Location(BaseModel):
 
 class Incident(BaseModel):
     incident_id: str
+    mission_id: str = "SAR-001"
     type: str
     confidence: float
     timestamp: datetime

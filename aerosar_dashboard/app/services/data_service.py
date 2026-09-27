@@ -2,10 +2,6 @@ from app.data.provider import DataProvider
 from app.data.mock_provider import MockDataProvider
 
 class DataService:
-    """
-    Service layer that acts as an intermediary between the UI and the data provider.
-    """
-    
     def __init__(self, provider: DataProvider = None):
         self._provider = provider or MockDataProvider()
         
@@ -17,3 +13,4 @@ class DataService:
     def get_system_health(self): return self._provider.get_system_health()
     def get_incidents(self): return self._provider.get_incidents()
     def get_events(self): return self._provider.get_events()
+    def get_detections(self): return self._provider.get_detections()
