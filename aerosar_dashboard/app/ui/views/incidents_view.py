@@ -181,9 +181,9 @@ class IncidentsView(QWidget):
     1. Incident Counters Bar (Dynamic counts derived from data)
     2. Main Layout (Incident List ~38%, Incident Detail ~62%)
     3. Filter Bar (ALL, NEW, REVIEW, CONFIRMED, RESOLVED)
-    4. Operational event generation and live polling
     """
     navigate_to_map = Signal(Incident)
+    navigate_to_reports = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -269,10 +269,11 @@ class IncidentsView(QWidget):
 
     def _on_generate_report(self, incident: Incident):
         self.data_service.log_event(
-            message=f"Report generation requested for incident {incident.incident_id} (AI module pending)",
-            event_type="SYSTEM",
-            severity="WARNING"
+            message=f"Opening intelligence report for incident {incident.incident_id}",
+            event_type="NAVIGATION",
+            severity="INFO"
         )
+        self.navigate_to_reports.emit(incident.incident_id)
 
     def select_incident_by_id(self, incident_id: str):
         """Allows programmatic selection from map or other navigation triggers."""

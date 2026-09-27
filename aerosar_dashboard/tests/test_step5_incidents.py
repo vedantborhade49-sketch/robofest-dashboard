@@ -2,6 +2,10 @@ import unittest
 from datetime import datetime
 from PySide6.QtWidgets import QApplication
 import sys
+import os
+
+# Add parent directory (aerosar_dashboard) to sys.path so 'app' can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.models.detection import Detection, BoundingBox
 from app.models.incident import Incident, Location

@@ -9,6 +9,7 @@ from app.models.system import SystemHealth
 from app.models.incident import Incident
 from app.models.event import Event
 from app.models.detection import Detection
+from app.models.report import Report
 
 class DataProvider(ABC):
     """Abstract base class for all data providers."""
@@ -28,7 +29,13 @@ class DataProvider(ABC):
     def get_incidents(self) -> List[Incident]: pass
     @abstractmethod
     def get_events(self) -> List[Event]: pass
+    def get_event(self, event_id: str) -> Optional[Event]: return None
     @abstractmethod
     def get_detections(self) -> List[Detection]: pass
     def add_event(self, event: Event): pass
     def get_map_state(self): pass
+    def get_telemetry_state(self): pass
+    def get_reports(self) -> List[Report]: return []
+    def get_report(self, report_id: str) -> Optional[Report]: return None
+    def review_report(self, report_id: str) -> bool: return False
+

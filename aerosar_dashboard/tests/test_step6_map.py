@@ -4,6 +4,10 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QMouseEvent
 import sys
+import os
+
+# Add parent directory (aerosar_dashboard) to sys.path so 'app' can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.models.incident import Incident, Location
 from app.models.map import MapState, SearchBoundary

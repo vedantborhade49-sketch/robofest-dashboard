@@ -67,6 +67,9 @@ class MainWindow(QMainWindow):
         # Cross-view navigation connections
         self.incidents_view.navigate_to_map.connect(self._on_navigate_to_map)
         self.map_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
+        self.reports_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
+        self.incidents_view.navigate_to_reports.connect(self._on_navigate_to_reports)
+        self.event_log_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
 
         # Set initial page
         self.sidebar.set_active_page(0)
@@ -116,3 +119,10 @@ class MainWindow(QMainWindow):
         self.sidebar.set_active_page(2)
         self._on_page_changed(2, "Incidents")
         self.incidents_view.select_incident_by_id(incident_id)
+
+    def _on_navigate_to_reports(self, incident_id: str):
+        """Cross-page action: Opens selected incident's report in Reports View."""
+        self.sidebar.set_active_page(5)
+        self._on_page_changed(5, "Reports")
+        self.reports_view.select_report_by_incident_id(incident_id)
+

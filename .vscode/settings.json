@@ -1,0 +1,7 @@
+{
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/aerosar_dashboard"
+  ],
+  "python.defaultInterpreterPath": "${workspaceFolder}/aerosar_dashboard/venv/Scripts/python.exe",
+  "python.analysis.typeCheckingMode": "off"
+}

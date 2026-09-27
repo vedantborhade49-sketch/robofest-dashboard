@@ -1,0 +1,8 @@
+{
+  "extraPaths": [
+    "aerosar_dashboard"
+  ],
+  "venvPath": "aerosar_dashboard",
+  "venv": "venv",
+  "typeCheckingMode": "off"
+}
