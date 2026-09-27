@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from .provider import DataProvider
 from app.models.mission import Mission
 from app.models.drone import Drone
@@ -26,30 +26,49 @@ class MockDataProvider(DataProvider):
         self._det_x = 0.4
         self._det_y = 0.5
         
+        # Primary mock incidents specified in Step 5 requirements
         self._incidents = [
             Incident(
-                incident_id="INC-001", mission_id="SAR-001", type="PERSON DETECTED", confidence=0.94,
+                incident_id="INC-001",
+                mission_id="SAR-001",
+                type="PERSON DETECTED",
+                confidence=0.94,
                 timestamp=datetime.now() - timedelta(minutes=2, seconds=10),
-                status="CONFIRMED", location=Location(x=12.4, y=8.7, z=14.8),
-                evidence_image="mock_evidence_001.jpg"
+                bbox=BoundingBox(x=0.48, y=0.52, width=0.18, height=0.32),
+                status="CONFIRMED",
+                location=Location(x=12.4, y=8.7, z=14.8),
+                evidence_image="EV-INC-001.jpg"
             ),
             Incident(
-                incident_id="INC-002", mission_id="SAR-001", type="PERSON DETECTED", confidence=0.87,
+                incident_id="INC-002",
+                mission_id="SAR-001",
+                type="PERSON DETECTED",
+                confidence=0.87,
                 timestamp=datetime.now() - timedelta(minutes=0, seconds=51),
-                status="REVIEW", location=Location(x=18.2, y=11.3, z=13.2),
-                evidence_image="mock_evidence_002.jpg"
+                bbox=BoundingBox(x=0.62, y=0.40, width=0.14, height=0.28),
+                status="REVIEW",
+                location=Location(x=18.2, y=11.3, z=13.2),
+                evidence_image="EV-INC-002.jpg"
             ),
             Incident(
-                incident_id="INC-003", mission_id="SAR-001", type="PERSON DETECTED", confidence=0.91,
+                incident_id="INC-003",
+                mission_id="SAR-001",
+                type="PERSON DETECTED",
+                confidence=0.91,
                 timestamp=datetime.now() - timedelta(minutes=0, seconds=33),
-                status="NEW", location=Location(x=7.8, y=16.5, z=12.7),
-                evidence_image="mock_evidence_003.jpg"
+                bbox=BoundingBox(x=0.35, y=0.65, width=0.16, height=0.30),
+                status="NEW",
+                location=Location(x=7.8, y=16.5, z=12.7),
+                evidence_image="EV-INC-003.jpg"
             )
         ]
         
         self._events = [
-            Event(timestamp=self._start_time, event_type="SYSTEM", message="Mission started", severity="INFO"),
-            Event(timestamp=datetime.now() - timedelta(minutes=2, seconds=11), event_type="AI", message="Person detected", severity="WARNING")
+            Event(timestamp=self._start_time, event_type="SYSTEM", message="Mission SAR-001 started", severity="INFO"),
+            Event(timestamp=datetime.now() - timedelta(minutes=2, seconds=11), event_type="AI", message="Person detected at 12.4, 8.7, 14.8", severity="WARNING"),
+            Event(timestamp=datetime.now() - timedelta(minutes=2, seconds=0), event_type="INCIDENT", message="Incident INC-001 confirmed by operator", severity="INFO"),
+            Event(timestamp=datetime.now() - timedelta(minutes=0, seconds=50), event_type="INCIDENT", message="Incident INC-002 created for review", severity="WARNING"),
+            Event(timestamp=datetime.now() - timedelta(minutes=0, seconds=32), event_type="INCIDENT", message="Incident INC-003 created [NEW]", severity="WARNING")
         ]
         
     def get_mission(self) -> Mission:
@@ -60,8 +79,8 @@ class MockDataProvider(DataProvider):
         )
 
     def get_drone(self) -> Drone:
-        self._drone_altitude += random.uniform(-0.2, 0.2)
-        self._drone_speed += random.uniform(-0.1, 0.1)
+        self._drone_altitude += random.uniform(-0.1, 0.1)
+        self._drone_speed += random.uniform(-0.05, 0.05)
         self._drone_speed = max(0.0, self._drone_speed)
         return Drone(
             drone_id="AEROSAR-01", status="AIRBORNE", battery=self._drone_battery,
@@ -99,8 +118,17 @@ class MockDataProvider(DataProvider):
     def get_incidents(self) -> List[Incident]:
         return self._incidents
         
+    def get_incident(self, incident_id: str) -> Optional[Incident]:
+        for inc in self._incidents:
+            if inc.incident_id == incident_id:
+                return inc
+        return None
+
     def get_events(self) -> List[Event]:
         return sorted(self._events, key=lambda e: e.timestamp, reverse=True)
+        
+    def add_event(self, event: Event):
+        self._events.append(event)
         
     def get_detections(self) -> List[Detection]:
         self._det_x += random.uniform(-0.01, 0.01)
@@ -110,7 +138,10 @@ class MockDataProvider(DataProvider):
         
         return [
             Detection(
-                detection_id="DET-1029", class_name="PERSON", confidence=random.uniform(0.85, 0.98),
-                bbox=BoundingBox(x=self._det_x, y=self._det_y, width=0.15, height=0.25), timestamp=datetime.now()
+                detection_id="DET-1029",
+                class_name="PERSON",
+                confidence=random.uniform(0.85, 0.98),
+                bbox=BoundingBox(x=self._det_x, y=self._det_y, width=0.15, height=0.25),
+                timestamp=datetime.now()
             )
         ]

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from app.models.detection import BoundingBox
 
 class Location(BaseModel):
     x: float
@@ -13,6 +14,7 @@ class Incident(BaseModel):
     type: str
     confidence: float
     timestamp: datetime
-    status: str
+    bbox: Optional[BoundingBox] = None
     location: Location
     evidence_image: Optional[str] = None
+    status: str = "NEW"  # NEW | REVIEW | CONFIRMED | RESOLVED

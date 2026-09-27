@@ -30,3 +30,4 @@ class DataProvider(ABC):
     def get_events(self) -> List[Event]: pass
     @abstractmethod
     def get_detections(self) -> List[Detection]: pass
+    def add_event(self, event: Event): pass
