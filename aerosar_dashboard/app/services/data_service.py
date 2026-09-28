@@ -57,6 +57,52 @@ class DataService(QObject):
         self._state_manager = StateManager.instance()
         self._state_manager.initialize_from_provider(self._provider)
 
+        # --- DATABASE & PERSISTENCE ---
+        from app.database.database import init_db
+        from app.database.repository import Repository
+        import logging
+        
+        db_initialized = init_db()
+        self._repository = Repository()
+        
+        # Merge persistent historical data into StateManager
+        state = self._state_manager.get_state()
+        if state and db_initialized:
+            try:
+                db_incidents = self._repository.get_incidents()
+                db_reports = self._repository.get_reports()
+                db_events = self._repository.get_events()
+                
+                existing_inc_ids = {i.incident_id for i in state.incidents}
+                for i in db_incidents:
+                    if i.incident_id not in existing_inc_ids:
+                        state.incidents.append(i)
+                        
+                existing_rep_ids = {r.report_id for r in state.reports}
+                for r in db_reports:
+                    if r.report_id not in existing_rep_ids:
+                        state.reports.append(r)
+                        
+                existing_evt_ids = {e.event_id for e in state.events}
+                for e in db_events:
+                    if e.event_id not in existing_evt_ids:
+                        state.events.append(e)
+                
+                # Re-sort events by timestamp descending
+                state.events = sorted(state.events, key=lambda ev: ev.timestamp, reverse=True)
+                
+                
+                self._state_manager.state_updated.emit(state)
+            except Exception as e:
+                logging.error(f"Failed to load historical data from database: {e}")
+
+        # Wire StateManager signals to Repository for persistence
+        self._state_manager.incident_added.connect(self._safe_save_incident)
+        self._state_manager.incident_updated.connect(self._safe_save_incident)
+        self._state_manager.report_added.connect(self._safe_save_report)
+        self._state_manager.report_updated.connect(self._safe_save_report)
+        self._state_manager.event_added.connect(self._safe_save_event)
+
         # Wire StateManager signals to DataService signals
         self._state_manager.mission_updated.connect(self.mission_updated.emit)
         self._state_manager.drone_updated.connect(self.drone_updated.emit)
@@ -230,3 +276,25 @@ class DataService(QObject):
             details=details
         )
         self.add_event(ev)
+
+    def _safe_save_incident(self, incident: Incident):
+        try:
+            self._repository.save_incident(incident)
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to persist incident {incident.incident_id}: {e}")
+
+    def _safe_save_report(self, report: Report):
+        try:
+            self._repository.save_report(report)
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to persist report {report.report_id}: {e}")
+
+    def _safe_save_event(self, event: Event):
+        try:
+            self._repository.save_event(event)
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to persist event {event.event_id}: {e}")
+
