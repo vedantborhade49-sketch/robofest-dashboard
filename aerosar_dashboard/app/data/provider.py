@@ -37,5 +37,18 @@ class DataProvider(ABC):
     def get_telemetry_state(self): pass
     def get_reports(self) -> List[Report]: return []
     def get_report(self, report_id: str) -> Optional[Report]: return None
-    def review_report(self, report_id: str) -> bool: return False
+    def step_simulation(self):
+        """Advances the physical and sensor simulation state by one cycle."""
+        pass
+
+    def add_incident(self, incident: Incident):
+        """Adds a new incident to the provider."""
+        pass
+
+    def update_incident(self, incident: Incident):
+        """Updates an existing incident."""
+        pass
+
+
+
 

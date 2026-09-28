@@ -153,13 +153,22 @@ class ReportsView(QWidget):
             self.report_list.select_report(reports[0])
 
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_data)
-        self.timer.start(4000)  # Gentle 4-second cycle
+        self.data_service.report_added.connect(self._on_report_added)
+        self.data_service.report_updated.connect(self._on_report_updated)
+        self.data_service.reports_updated.connect(self._on_reports_updated)
 
-    def _poll_data(self):
-        reports = self.data_service.get_reports()
+    def _on_report_added(self, report: Report):
+        self._on_reports_updated(self.data_service.get_reports())
+
+    def _on_report_updated(self, report: Report):
+        self.report_list.update_report_in_place(report)
+        self.counters_bar.update_counts(self.data_service.get_reports())
+        if getattr(self.report_detail, "report", None) and self.report_detail.report.report_id == report.report_id:
+            self.report_detail.show_report(report)
+
+    def _on_reports_updated(self, reports: List[Report]):
         self.counters_bar.update_counts(reports)
+        self.report_list.set_reports(reports)
 
     def _on_report_selected(self, report: Report):
         self.report_detail.show_report(report)

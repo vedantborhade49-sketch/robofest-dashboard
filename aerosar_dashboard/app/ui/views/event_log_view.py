@@ -328,17 +328,22 @@ class EventLogView(QWidget):
             self.event_detail.show_event(self.all_events[0])
 
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_data)
-        self.timer.start(3000)  # 3-second live update cycle
+        self.data_service.event_added.connect(self._on_event_added)
+        self.data_service.events_updated.connect(self._on_events_updated)
+
+    def _on_event_added(self, event):
+        self.all_events = self.data_service.get_events()
+        self.counters_bar.update_counts(self.all_events)
+        self._apply_filters()
+
+    def _on_events_updated(self, events):
+        self.all_events = events
+        self.counters_bar.update_counts(self.all_events)
+        self._apply_filters()
 
     def _poll_data(self):
-        latest = self.data_service.get_events()
-        # If new events arrived
-        if len(latest) != len(self.all_events) or (latest and self.all_events and latest[0].timestamp != self.all_events[0].timestamp):
-            self.all_events = latest
-            self.counters_bar.update_counts(self.all_events)
-            self._apply_filters()
+        """Manual refresh triggered by the Refresh button."""
+        self._on_events_updated(self.data_service.get_events())
 
     def _apply_filters(self):
         filtered = []

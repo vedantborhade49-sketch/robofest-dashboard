@@ -236,14 +236,18 @@ class IncidentsView(QWidget):
             self.incident_list.select_incident(first_inc)
 
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_data)
-        self.timer.start(4000)  # Gentle 4-second cycle
+        self.data_service.incident_added.connect(self._on_incident_added)
+        self.data_service.incident_updated.connect(self._on_incident_updated)
+        self.data_service.incidents_updated.connect(self._on_incidents_updated)
 
-    def _poll_data(self):
-        incidents = self.data_service.get_incidents()
+    def _on_incident_added(self, incident: Incident):
+        self._on_incidents_updated(self.data_service.get_incidents())
+
+    def _on_incident_updated(self, incident: Incident):
+        self._on_incidents_updated(self.data_service.get_incidents())
+
+    def _on_incidents_updated(self, incidents: List[Incident]):
         self.counters_bar.update_counts(incidents)
-        # Update list preserving current selection
         self.incident_list.set_incidents(incidents)
 
     def _on_filter_changed(self, filter_name: str):

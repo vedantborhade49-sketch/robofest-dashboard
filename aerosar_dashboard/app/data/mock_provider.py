@@ -833,9 +833,27 @@ class MockDataProvider(DataProvider):
             )
         ]
 
+    def step_simulation(self):
+        """Advances the physical and sensor simulation state by one cycle."""
+        self._frame_count += random.randint(14, 16)
+        self._det_x += random.uniform(-0.005, 0.005)
+        self._det_y += random.uniform(-0.005, 0.005)
+        self._det_x = max(0.15, min(0.85, self._det_x))
+        self._det_y = max(0.15, min(0.85, self._det_y))
+
+    def add_incident(self, incident: Incident):
+        """Adds a new incident at the top of the mock incident list."""
+        self._incidents.insert(0, incident)
+
+    def update_incident(self, incident: Incident):
+        """Updates an existing incident matching incident_id."""
+        for idx, inc in enumerate(self._incidents):
+            if inc.incident_id == incident.incident_id:
+                self._incidents[idx] = incident
+                break
+
     def get_map_state(self) -> MapState:
         self._step_drone_simulation()
-        
         explored_poly = [
             Location(x=0.0, y=0.0, z=0.0),
             Location(x=20.5, y=0.0, z=0.0),

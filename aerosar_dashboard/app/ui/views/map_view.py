@@ -160,13 +160,16 @@ class MapView(QWidget):
         self.info_panel.update_data(self._map_state, self._incidents)
 
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_data)
-        self.timer.start(1000)  # 1-second update cycle for smooth mock movement
+        self.data_service.map_updated.connect(self._on_map_updated)
+        self.data_service.incidents_updated.connect(self._on_incidents_updated)
 
-    def _poll_data(self):
-        self._map_state = self.data_service.get_map_state()
-        self._incidents = self.data_service.get_incidents()
+    def _on_map_updated(self, map_state):
+        self._map_state = map_state
+        self.mission_map.update_map(self._map_state, self._incidents)
+        self.info_panel.update_data(self._map_state, self._incidents)
+
+    def _on_incidents_updated(self, incidents):
+        self._incidents = incidents
         self.mission_map.update_map(self._map_state, self._incidents)
         self.info_panel.update_data(self._map_state, self._incidents)
 

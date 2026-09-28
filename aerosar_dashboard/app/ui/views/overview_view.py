@@ -65,11 +65,27 @@ class OverviewView(QWidget):
         self.layout.addLayout(bottom_row)
         
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._fetch_and_update_data)
-        self.timer.start(1000)
+        # Initial population from central state
         self._fetch_and_update_data()
-        
+
+        # Connect to centralized reactive data signals
+        self.data_service.mission_updated.connect(self.mission_panel.update_data)
+        self.data_service.drone_updated.connect(self._on_drone_updated)
+        self.data_service.system_updated.connect(self._on_system_updated)
+        self.data_service.camera_updated.connect(self.camera_panel.update_data)
+        self.data_service.incidents_updated.connect(self.incidents_panel.update_data)
+        self.data_service.events_updated.connect(self.events_panel.update_data)
+
+    def _on_drone_updated(self, drone_data):
+        self.drone_panel.update_data(drone_data)
+        self.map_panel.update_data(drone_data)
+
+    def _on_system_updated(self, sys_health):
+        cam_data = self.data_service.get_camera_data()
+        ai_data = self.data_service.get_ai_data()
+        self.system_panel.update_data(sys_health, cam_data, ai_data)
+        self.health_panel.update_data(sys_health)
+
     def _fetch_and_update_data(self):
         mission_data = self.data_service.get_mission_data()
         drone_data = self.data_service.get_drone_data()
@@ -78,12 +94,10 @@ class OverviewView(QWidget):
         ai_data = self.data_service.get_ai_data()
         incidents = self.data_service.get_incidents()
         events = self.data_service.get_events()
-        
-        self.mission_panel.update_data(mission_data)
-        self.drone_panel.update_data(drone_data)
-        self.system_panel.update_data(sys_health, cam_data, ai_data)
-        self.camera_panel.update_data(cam_data)
-        self.map_panel.update_data(drone_data)
-        self.incidents_panel.update_data(incidents)
-        self.health_panel.update_data(sys_health)
-        self.events_panel.update_data(events)
+
+        if mission_data: self.mission_panel.update_data(mission_data)
+        if drone_data: self._on_drone_updated(drone_data)
+        if sys_health: self._on_system_updated(sys_health)
+        if cam_data: self.camera_panel.update_data(cam_data)
+        if incidents is not None: self.incidents_panel.update_data(incidents)
+        if events is not None: self.events_panel.update_data(events)

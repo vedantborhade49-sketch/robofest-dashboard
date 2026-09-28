@@ -46,18 +46,27 @@ class LiveFeedView(QWidget):
         self.layout.addWidget(right_widget, 3)
         
     def _start_live_updates(self):
-        # We update the Live Feed at 500ms for smoother visual bbox updates
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._fetch_and_update_data)
-        self.timer.start(500)
+        # Initial display from central state
         self._fetch_and_update_data()
-        
+
+        # Connect to centralized signals driven by the CentralUpdateLoop
+        self.data_service.detections_updated.connect(self._on_detections_updated)
+        self.data_service.camera_updated.connect(self.camera_status.update_data)
+        self.data_service.ai_updated.connect(self.ai_panel.update_data)
+
+    def _on_detections_updated(self, detections):
+        self.camera_panel.update_data(detections)
+        self.detections_panel.update_data(detections)
+
     def _fetch_and_update_data(self):
         cam_data = self.data_service.get_camera_data()
         ai_data = self.data_service.get_ai_data()
         detections = self.data_service.get_detections()
-        
-        self.camera_panel.update_data(detections)
-        self.camera_status.update_data(cam_data)
-        self.ai_panel.update_data(ai_data)
-        self.detections_panel.update_data(detections)
+
+        if detections is not None:
+            self._on_detections_updated(detections)
+        if cam_data is not None:
+            self.camera_status.update_data(cam_data)
+        if ai_data is not None:
+            self.ai_panel.update_data(ai_data)
+

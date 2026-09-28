@@ -184,16 +184,11 @@ class TelemetryView(QWidget):
 
     def _init_data(self):
         state = self.data_service.get_telemetry_state()
-        self._apply_state(state)
+        if state:
+            self._apply_state(state)
 
     def _start_live_updates(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._fetch_and_update)
-        self.timer.start(1000)  # Standard 1-second update cycle
-
-    def _fetch_and_update(self):
-        state = self.data_service.get_telemetry_state()
-        self._apply_state(state)
+        self.data_service.telemetry_updated.connect(self._apply_state)
 
     def _apply_state(self, state: TelemetryState):
         self.header_bar.update_connection(state.communication.link_status)
