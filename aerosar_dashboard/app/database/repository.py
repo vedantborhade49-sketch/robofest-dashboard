@@ -24,6 +24,55 @@ class Repository:
     def _get_session(self) -> Session:
         return next(get_session())
 
+    # --- MISSIONS ---
+    def save_mission(self, mission: "Mission"):
+        with self._get_session() as db:
+            db_mission = db.query(MissionModel).filter(MissionModel.mission_id == mission.mission_id).first()
+            if not db_mission:
+                db_mission = MissionModel(mission_id=mission.mission_id)
+                db.add(db_mission)
+
+            db_mission.mission_name = getattr(mission, "mission_name", "Search and Rescue")
+            db_mission.status = getattr(mission, "status", getattr(mission, "mission_status", "ACTIVE"))
+            db_mission.start_time = getattr(mission, "start_time", None)
+            db_mission.end_time = getattr(mission, "end_time", None)
+            db.commit()
+
+    def get_missions(self) -> List[Mission]:
+        with self._get_session() as db:
+            models = db.query(MissionModel).order_by(MissionModel.created_at.asc()).all()
+            missions = []
+            for m in models:
+                missions.append(Mission(
+                    mission_id=m.mission_id,
+                    mission_name=m.mission_name,
+                    mission_status=m.status,
+                    status=m.status,
+                    start_time=m.start_time,
+                    end_time=m.end_time,
+                    elapsed_time=0.0,
+                    search_progress=0.0,
+                    connection_status="CONNECTED",
+                ))
+            return missions
+
+    def get_mission(self, mission_id: str) -> Optional[Mission]:
+        with self._get_session() as db:
+            m = db.query(MissionModel).filter(MissionModel.mission_id == mission_id).first()
+            if not m:
+                return None
+            return Mission(
+                mission_id=m.mission_id,
+                mission_name=m.mission_name,
+                mission_status=m.status,
+                status=m.status,
+                start_time=m.start_time,
+                end_time=m.end_time,
+                elapsed_time=0.0,
+                search_progress=0.0,
+                connection_status="CONNECTED",
+            )
+
     # --- INCIDENTS ---
     def save_incident(self, incident: Incident):
         with self._get_session() as db:
@@ -137,7 +186,7 @@ class Repository:
                         content=c.content,
                         relevance_score=c.relevance_score
                     ))
-                
+
                 summary = IncidentSummary(
                     incident_id=m.summary_incident_id,
                     type=m.incident_type,
@@ -146,7 +195,7 @@ class Repository:
                     location=Location(x=m.summary_loc_x, y=m.summary_loc_y, z=m.summary_loc_z),
                     status=m.summary_status
                 )
-                
+
                 rep = Report(
                     report_id=m.report_id,
                     incident_id=m.incident_id,
@@ -166,6 +215,42 @@ class Repository:
                 )
                 reports.append(rep)
             return reports
+
+    def get_report(self, report_id: str) -> Optional[Report]:
+        reports = self.get_reports()
+        for report in reports:
+            if report.report_id == report_id:
+                return report
+        return None
+
+    def save_context(self, report_id: str, context: RetrievedContext):
+        with self._get_session() as db:
+            db_ctx = db.query(RetrievedContextModel).filter(
+                RetrievedContextModel.report_id == report_id,
+                RetrievedContextModel.source_id == context.source_id,
+            ).first()
+            if not db_ctx:
+                db_ctx = RetrievedContextModel(context_id=f"CTX-{report_id}-{context.source_id}")
+                db.add(db_ctx)
+            db_ctx.report_id = report_id
+            db_ctx.source_id = context.source_id
+            db_ctx.source_type = context.source_type
+            db_ctx.content = context.content
+            db_ctx.relevance_score = context.relevance_score
+            db.commit()
+
+    def get_context_for_report(self, report_id: str) -> List[RetrievedContext]:
+        with self._get_session() as db:
+            rows = db.query(RetrievedContextModel).filter(RetrievedContextModel.report_id == report_id).all()
+            return [
+                RetrievedContext(
+                    source_id=r.source_id,
+                    source_type=r.source_type,
+                    content=r.content,
+                    relevance_score=r.relevance_score,
+                )
+                for r in rows
+            ]
 
     # --- EVENTS ---
     def save_event(self, event: Event):
