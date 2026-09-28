@@ -4,12 +4,13 @@ from app.models.mission import Mission
 from app.models.drone import Drone
 from app.models.camera import Camera
 from app.models.ai import AIStatus
-from app.models.telemetry import Telemetry
+from app.models.telemetry import Telemetry, TelemetryState
 from app.models.system import SystemHealth
 from app.models.incident import Incident
 from app.models.event import Event
 from app.models.detection import Detection
 from app.models.report import Report
+from app.models.map import MapState
 
 class DataProvider(ABC):
     """Abstract base class for all data providers."""
@@ -33,8 +34,10 @@ class DataProvider(ABC):
     @abstractmethod
     def get_detections(self) -> List[Detection]: pass
     def add_event(self, event: Event): pass
-    def get_map_state(self): pass
-    def get_telemetry_state(self): pass
+    @abstractmethod
+    def get_map_state(self) -> MapState: pass
+    @abstractmethod
+    def get_telemetry_state(self) -> TelemetryState: pass
     def get_reports(self) -> List[Report]: return []
     def get_report(self, report_id: str) -> Optional[Report]: return None
     def step_simulation(self):
