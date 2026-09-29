@@ -191,6 +191,28 @@ class DataService(QObject):
                         
             elif event_type == "EVIDENCE_CREATED":
                 pass # The app will fetch it via REST if needed, or we can update the incident
+            elif event_type == "REPORT_GENERATED":
+                report_id = payload.get("report_id")
+                if report_id:
+                    import threading
+                    import httpx
+                    import logging
+                    def _fetch_report():
+                        try:
+                            url = f"http://127.0.0.1:8000/api/v1/reports/{report_id}"
+                            with httpx.Client() as client:
+                                resp = client.get(url)
+                                resp.raise_for_status()
+                                report_data = resp.json()
+                                from app.models.report import Report
+                                report = Report(**report_data)
+                                # Make sure to add it via thread-safe signal or UI thread if needed,
+                                # but StateManager seems to handle standard adds.
+                                # Let's use internal StateManager method.
+                                self._state_manager.add_report(report)
+                        except Exception as e:
+                            logging.error(f"Failed to fetch generated report {report_id}: {e}")
+                    threading.Thread(target=_fetch_report, daemon=True).start()
         except Exception as e:
             import logging
             logging.error(f"Error handling realtime event: {e}")
@@ -344,6 +366,29 @@ class DataService(QObject):
             ))
             return True
         return prov_ok
+
+    def request_report_generation(self, incident_id: str):
+        """Requests the backend to generate a report for the given incident via REST API."""
+        # For a full implementation we would make a non-blocking HTTP request here.
+        # We can use QNetworkAccessManager or a background thread.
+        import threading
+        import httpx
+        import logging
+        
+        def _do_request():
+            try:
+                # Use httpx to make synchronous call inside a thread
+                url = f"http://127.0.0.1:8000/api/v1/incidents/{incident_id}/generate-report"
+                # If mock mode, maybe bypass? No, let it hit the backend to test full pipeline
+                with httpx.Client(timeout=60.0) as client:
+                    resp = client.post(url)
+                    resp.raise_for_status()
+                    logging.info(f"Report generated successfully for incident {incident_id}")
+            except Exception as e:
+                logging.error(f"Failed to request report generation for {incident_id}: {e}")
+                
+        # Run in thread so UI doesn't freeze
+        threading.Thread(target=_do_request, daemon=True).start()
 
     def add_event(self, event: Event):
         """Adds an event to provider and StateManager."""

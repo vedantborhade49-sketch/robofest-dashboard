@@ -61,3 +61,21 @@ def get_incident_evidence_file(incident_id: str):
     if BackendService().evidence_service.is_invalid_path(target.file_path):
         raise HTTPException(status_code=400, detail="Invalid evidence path")
     return FileResponse(path=target.file_path, media_type=target.mime_type)
+
+@router.post("/{incident_id}/generate-report", summary="Generate an AI report for this incident")
+async def generate_incident_report(incident_id: str):
+    from app.api.schemas import ReportResponse
+    from app.intelligence.service import IntelligenceService
+    
+    # 1. Fetch Incident
+    incident = BackendService().get_incident(incident_id)
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    try:
+        # 2. Orchestrate Generation
+        intelligence_service = IntelligenceService()
+        report = await intelligence_service.generate_incident_report(incident)
+        return ReportResponse.model_validate(report.model_dump())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(exc)}") from exc

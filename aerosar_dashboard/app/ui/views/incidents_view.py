@@ -24,9 +24,9 @@ class IncidentCountersBar(QFrame):
                 border-radius: 6px;
             }}
         """)
-        self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(24, 10, 24, 10)
-        self.layout.setSpacing(16)
+        self.main_layout = QHBoxLayout(self)
+        self.main_layout.setContentsMargins(24, 10, 24, 10)
+        self.main_layout.setSpacing(16)
 
         # Title & Active summary on left
         title_box = QWidget()
@@ -42,8 +42,8 @@ class IncidentCountersBar(QFrame):
         self.active_sub_lbl.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold; font-family: monospace;")
         tb_layout.addWidget(self.active_sub_lbl)
 
-        self.layout.addWidget(title_box)
-        self.layout.addStretch(1)
+        self.main_layout.addWidget(title_box)
+        self.main_layout.addStretch(1)
 
         # Counters: TOTAL | NEW | REVIEW | CONFIRMED | RESOLVED
         self.val_total = self._add_counter_item("TOTAL", "0", Theme.TEXT_PRIMARY)
@@ -73,14 +73,14 @@ class IncidentCountersBar(QFrame):
 
         bl.addWidget(val_lbl)
         bl.addWidget(txt_lbl)
-        self.layout.addWidget(box)
+        self.main_layout.addWidget(box)
         return val_lbl
 
     def _add_v_separator(self):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.VLine)
         sep.setStyleSheet(f"color: {Theme.BORDER};")
-        self.layout.addWidget(sep)
+        self.main_layout.addWidget(sep)
 
     def update_counts(self, incidents: List[Incident]):
         total = len(incidents)
@@ -264,8 +264,9 @@ class IncidentsView(QWidget):
         )
 
     def _on_view_on_map(self, incident: Incident):
+        loc_str = f"[{incident.location.x:.1f}, {incident.location.y:.1f}, {incident.location.z:.1f}]" if incident.location else "[Unknown]"
         self.data_service.log_event(
-            message=f"Incident {incident.incident_id} map location requested [{incident.location.x:.1f}, {incident.location.y:.1f}, {incident.location.z:.1f}]",
+            message=f"Incident {incident.incident_id} map location requested {loc_str}",
             event_type="NAVIGATION",
             severity="INFO"
         )
@@ -277,6 +278,7 @@ class IncidentsView(QWidget):
             event_type="NAVIGATION",
             severity="INFO"
         )
+        self.data_service.request_report_generation(incident.incident_id)
         self.navigate_to_reports.emit(incident.incident_id)
 
     def select_incident_by_id(self, incident_id: str):

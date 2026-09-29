@@ -9,6 +9,7 @@ from app.rag.models import RAGResult
 from app.llm.config import LLMConfig
 from app.llm.provider import LLMProvider
 from app.llm.mock_provider import MockLLMProvider
+from app.llm.cloud_provider import CloudLLMProvider
 from app.llm.prompts import build_prompt, SYSTEM_PROMPT
 from app.database.repository import Repository
 
@@ -27,6 +28,8 @@ class LLMService:
         # Instantiate provider based on config
         if self.config.provider.lower() == "mock":
             self.provider: LLMProvider = MockLLMProvider(self.config)
+        elif self.config.provider.lower() == "cloud":
+            self.provider: LLMProvider = CloudLLMProvider(self.config)
         else:
             # Fallback to mock if an unknown provider is specified
             logger.warning(f"Provider '{self.config.provider}' not recognized. Falling back to MockLLMProvider.")
