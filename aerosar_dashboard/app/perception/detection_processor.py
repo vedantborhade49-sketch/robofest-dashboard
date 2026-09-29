@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import uuid
@@ -26,7 +26,7 @@ def process_raw_detections(raw, frame_id: int, width: int, height: int, source: 
 
             det = Detection(
                 detection_id=str(uuid.uuid4()),
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 frame_id=frame_id,
                 class_id=cls_id,
                 class_name=cls_name,

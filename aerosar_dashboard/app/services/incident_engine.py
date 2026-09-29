@@ -10,6 +10,7 @@ Camera -> OpenCV -> YOLO -> Detection -> Incident Engine -> Structured Incident 
 from typing import Optional
 from datetime import datetime
 from app.models.detection import Detection
+from app.models.evidence import EvidenceType
 from app.models.incident import Incident, Location
 
 class IncidentEngine:
@@ -35,22 +36,25 @@ class IncidentEngine:
         detection: Detection,
         current_location: Location,
         mission_id: str = "SAR-001",
-        status: str = "NEW"
+        status: str = "NEW",
+        evidence_service=None,
+        frame=None,
+        source: str = "camera-01",
     ) -> Optional[Incident]:
         """
         Transforms an AI Detection into a structured Incident.
+        Creates evidence metadata for the captured frame when an evidence service is supplied.
         """
         if not self.validate_detection(detection):
             return None
 
         self._counter += 1
         incident_id = f"INC-{self._counter:03d}"
-        
-        # Format incident type cleanly (e.g., PERSON DETECTED or PERSON)
+
         class_name = detection.class_name.upper()
         incident_type = f"{class_name} DETECTED" if not class_name.endswith("DETECTED") else class_name
-        
-        return Incident(
+
+        incident = Incident(
             incident_id=incident_id,
             mission_id=mission_id,
             type=incident_type,
@@ -59,5 +63,18 @@ class IncidentEngine:
             bbox=detection.bbox,
             location=current_location,
             evidence_image=f"EV-{incident_id}.jpg",
-            status=status
+            status=status,
         )
+
+        if evidence_service is not None:
+            evidence = evidence_service.create_evidence_record(
+                incident=incident,
+                evidence_type=EvidenceType.ANNOTATED_FRAME,
+                frame=frame,
+                source=source,
+                description=f"Annotated evidence for {incident_id}",
+            )
+            incident.evidence_id = evidence.evidence_id
+            incident.evidence_image = evidence.file_path
+
+        return incident

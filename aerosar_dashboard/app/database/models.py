@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer, JSON
+from sqlalchemy import String, Float, DateTime, Integer, JSON, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
+from typing import Optional, Dict, Any
 from app.database.database import Base
 
 def get_utc_now():
@@ -7,86 +9,100 @@ def get_utc_now():
 
 class MissionModel(Base):
     __tablename__ = "missions"
-    mission_id = Column(String, primary_key=True, index=True)
-    mission_name = Column(String, default="Search and Rescue")
-    status = Column(String)
-    start_time = Column(DateTime, default=get_utc_now)
-    end_time = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=get_utc_now)
+    mission_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    mission_name: Mapped[str] = mapped_column(String, default="Search and Rescue")
+    status: Mapped[str] = mapped_column(String)
+    start_time: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    end_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
 
 class IncidentModel(Base):
     __tablename__ = "incidents"
-    incident_id = Column(String, primary_key=True, index=True)
-    mission_id = Column(String, index=True)
-    type = Column(String)
-    confidence = Column(Float)
-    timestamp = Column(DateTime, default=get_utc_now)
+    incident_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    mission_id: Mapped[str] = mapped_column(String, index=True)
+    type: Mapped[str] = mapped_column(String)
+    confidence: Mapped[float] = mapped_column(Float)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
     
     # Optional bounding box
-    bbox_x = Column(Float, nullable=True)
-    bbox_y = Column(Float, nullable=True)
-    bbox_width = Column(Float, nullable=True)
-    bbox_height = Column(Float, nullable=True)
+    bbox_x: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bbox_y: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bbox_width: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bbox_height: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     
     # Location
-    location_x = Column(Float)
-    location_y = Column(Float)
-    location_z = Column(Float)
-    
-    evidence_image = Column(String, nullable=True)
-    status = Column(String)
-    created_at = Column(DateTime, default=get_utc_now)
-    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+    location_x: Mapped[float] = mapped_column(Float)
+    location_y: Mapped[float] = mapped_column(Float)
+    location_z: Mapped[float] = mapped_column(Float)
+
+    evidence_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    evidence_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+class EvidenceModel(Base):
+    __tablename__ = "evidence"
+    evidence_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    incident_id: Mapped[str] = mapped_column(String, ForeignKey("incidents.incident_id"), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    type: Mapped[str] = mapped_column(String)
+    file_path: Mapped[str] = mapped_column(String, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String, default="image/jpeg")
+    frame_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
 
 class ReportModel(Base):
     __tablename__ = "reports"
-    report_id = Column(String, primary_key=True, index=True)
-    incident_id = Column(String, index=True)
-    mission_id = Column(String, index=True)
-    status = Column(String)
-    generated_at = Column(DateTime, default=get_utc_now)
+    report_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    incident_id: Mapped[str] = mapped_column(String, index=True)
+    mission_id: Mapped[str] = mapped_column(String, index=True)
+    status: Mapped[str] = mapped_column(String)
+    generated_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
     
-    incident_type = Column(String)
-    confidence = Column(Float)
+    incident_type: Mapped[str] = mapped_column(String)
+    confidence: Mapped[float] = mapped_column(Float)
     
     # Incident Summary flatten
-    summary_incident_id = Column(String)
-    summary_timestamp = Column(DateTime)
-    summary_loc_x = Column(Float)
-    summary_loc_y = Column(Float)
-    summary_loc_z = Column(Float)
-    summary_status = Column(String)
+    summary_incident_id: Mapped[str] = mapped_column(String)
+    summary_timestamp: Mapped[datetime] = mapped_column(DateTime)
+    summary_loc_x: Mapped[float] = mapped_column(Float)
+    summary_loc_y: Mapped[float] = mapped_column(Float)
+    summary_loc_z: Mapped[float] = mapped_column(Float)
+    summary_status: Mapped[str] = mapped_column(String)
     
-    ai_report = Column(String)
-    evidence_image = Column(String, nullable=True)
-    evidence_source = Column(String, nullable=True)
-    evidence_frame: int | None = Column(Integer, nullable=True)
-    human_review_status = Column(String)
-    model_name = Column(String)
+    ai_report: Mapped[str] = mapped_column(String)
+    evidence_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    evidence_source: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    evidence_frame: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    human_review_status: Mapped[str] = mapped_column(String)
+    model_name: Mapped[str] = mapped_column(String)
     
-    created_at = Column(DateTime, default=get_utc_now)
-    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now, onupdate=get_utc_now)
 
 class RetrievedContextModel(Base):
     __tablename__ = "retrieved_context"
-    context_id = Column(String, primary_key=True, index=True)
-    report_id = Column(String, index=True)
-    source_id = Column(String)
-    source_type = Column(String)
-    content = Column(String)
-    relevance_score = Column(Float)
-    timestamp = Column(DateTime, default=get_utc_now)
+    context_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    report_id: Mapped[str] = mapped_column(String, index=True)
+    source_id: Mapped[str] = mapped_column(String)
+    source_type: Mapped[str] = mapped_column(String)
+    content: Mapped[str] = mapped_column(String)
+    relevance_score: Mapped[float] = mapped_column(Float)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
 
 class EventModel(Base):
     __tablename__ = "events"
-    event_id = Column(String, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=get_utc_now)
-    level = Column(String)
-    source = Column(String)
-    event_type = Column(String)
-    message = Column(String)
-    severity = Column(String)
-    mission_id = Column(String, nullable=True, index=True)
-    incident_id = Column(String, nullable=True, index=True)
-    details = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=get_utc_now)
+    event_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    level: Mapped[str] = mapped_column(String)
+    source: Mapped[str] = mapped_column(String)
+    event_type: Mapped[str] = mapped_column(String)
+    message: Mapped[str] = mapped_column(String)
+    severity: Mapped[str] = mapped_column(String)
+    mission_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    incident_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    details: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)

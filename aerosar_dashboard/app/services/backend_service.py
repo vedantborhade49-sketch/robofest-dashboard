@@ -15,12 +15,17 @@ from app.models.report import Report
 from app.models.context import RetrievedContext
 from app.models.system import SystemHealth
 from app.models.telemetry import TelemetryState
+from app.models.evidence import Evidence
+from app.services.incident_service import IncidentService
+from app.services.evidence_service import EvidenceService
 
 
 class BackendService:
     def __init__(self, repository: Optional[Repository] = None):
         init_db()
         self.repository = repository or Repository()
+        self.incident_service = IncidentService(self.repository)
+        self.evidence_service = EvidenceService()
 
     def get_system_status(self) -> Dict[str, Any]:
         try:
@@ -61,18 +66,13 @@ class BackendService:
         return self.repository.get_mission(mission_id)
 
     def create_incident(self, incident: Incident) -> Incident:
-        self.repository.save_incident(incident)
-        return incident
+        return self.incident_service.create_incident(incident)
 
     def get_incidents(self) -> List[Incident]:
-        return self.repository.get_incidents()
+        return self.incident_service.list_incidents()
 
     def get_incident(self, incident_id: str) -> Optional[Incident]:
-        incidents = self.get_incidents()
-        for item in incidents:
-            if item.incident_id == incident_id:
-                return item
-        return None
+        return self.incident_service.get_incident(incident_id)
 
     def update_incident(self, incident_id: str, **updates: Any) -> Incident:
         incident = self.get_incident(incident_id)
@@ -80,10 +80,22 @@ class BackendService:
             raise ValueError(f"Incident {incident_id} not found")
 
         for field, value in updates.items():
+            if field == "status":
+                incident = self.incident_service.update_status(incident_id, str(value))
+                continue
             if hasattr(incident, field) and field != "incident_id":
                 setattr(incident, field, value)
         self.repository.save_incident(incident)
         return incident
+
+    def update_incident_status(self, incident_id: str, status: str) -> Incident:
+        return self.incident_service.update_status(incident_id, status)
+
+    def attach_evidence(self, incident_id: str, evidence: Evidence) -> Incident:
+        return self.incident_service.attach_evidence(incident_id, evidence)
+
+    def get_incident_evidence(self, incident_id: str) -> List[Evidence]:
+        return self.incident_service.get_evidence(incident_id)
 
     def create_report(self, report: Report) -> Report:
         self.repository.save_report(report)

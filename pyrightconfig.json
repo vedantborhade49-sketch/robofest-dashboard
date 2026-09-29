@@ -2,7 +2,7 @@
   "extraPaths": [
     "aerosar_dashboard"
   ],
-  "venvPath": "aerosar_dashboard",
-  "venv": "venv",
-  "typeCheckingMode": "off"
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "basic"
 }

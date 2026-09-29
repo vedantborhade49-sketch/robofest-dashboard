@@ -44,9 +44,9 @@ class Header(QWidget):
         layout.addWidget(drone_status)
         
         # Right: Connection Status
-        connection_status = QLabel("● CONNECTED")
-        connection_status.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 12px; font-weight: bold;")
-        layout.addWidget(connection_status)
+        self.connection_status = QLabel("REAL-TIME: CONNECTING...")
+        self.connection_status.setStyleSheet(f"color: {Theme.STATUS_WARNING}; font-size: 12px; font-weight: bold;")
+        layout.addWidget(self.connection_status)
         
         # Vertical Separator
         separator = QFrame()
@@ -61,6 +61,17 @@ class Header(QWidget):
         
     def set_page_title(self, title: str):
         self.page_title.setText(f"AEROSAR / {title.upper()}")
+        
+    def set_realtime_status(self, status: str):
+        if status == "CONNECTED":
+            self.connection_status.setText("REAL-TIME: CONNECTED")
+            self.connection_status.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 12px; font-weight: bold;")
+        elif status == "DISCONNECTED":
+            self.connection_status.setText("REAL-TIME: DISCONNECTED")
+            self.connection_status.setStyleSheet(f"color: {Theme.STATUS_ERROR}; font-size: 12px; font-weight: bold;")
+        elif status == "MOCK":
+            self.connection_status.setText("REAL-TIME: MOCK MODE")
+            self.connection_status.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 12px; font-weight: bold;")
         
     def _start_clock(self):
         self.timer = QTimer(self)

@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.models.context import RetrievedContext
 from app.models.event import Event
-from app.models.incident import Incident, Location
+from app.models.evidence import Evidence, EvidenceType
+from app.models.incident import Incident, IncidentStatus, Location
 from app.models.report import IncidentSummary, Report
 
 
@@ -86,6 +87,18 @@ class IncidentPatchRequest(BaseModel):
     status: Optional[str] = None
 
 
+class IncidentStatusUpdateRequest(BaseModel):
+    status: str
+
+    @model_validator(mode="after")
+    def validate_status(self):
+        new_status = str(self.status).upper()
+        if not IncidentStatus.validate_transition(IncidentStatus.NEW, new_status):
+            # validation is handled in service logic and API route; allow the enum to accept known values only
+            pass
+        return self
+
+
 class IncidentResponse(BaseModel):
     incident_id: str
     mission_id: str
@@ -108,6 +121,32 @@ class IncidentResponse(BaseModel):
                 data = dict(data)
                 data["bbox"] = dict(data["bbox"])
         return super().model_validate(data)
+
+
+class EvidenceResponse(BaseModel):
+    evidence_id: str
+    incident_id: str
+    timestamp: datetime
+    type: str
+    file_path: str
+    mime_type: str = "image/jpeg"
+    frame_id: Optional[int] = None
+    source: Optional[str] = None
+    description: Optional[str] = None
+
+    @classmethod
+    def from_model(cls, evidence: Evidence) -> "EvidenceResponse":
+        return cls(
+            evidence_id=evidence.evidence_id,
+            incident_id=evidence.incident_id,
+            timestamp=evidence.timestamp,
+            type=evidence.type.value if isinstance(evidence.type, EvidenceType) else str(evidence.type),
+            file_path=evidence.file_path,
+            mime_type=evidence.mime_type,
+            frame_id=evidence.frame_id,
+            source=evidence.source,
+            description=evidence.description,
+        )
 
 
 class IncidentSummaryRequest(BaseModel):

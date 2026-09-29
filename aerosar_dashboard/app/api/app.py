@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import asyncio
 
 from app.api.routes.health import router as health_router
 from app.api.routes.missions import router as missions_router
@@ -8,11 +10,21 @@ from app.api.routes.reports import router as reports_router
 from app.api.routes.events import router as events_router
 from app.api.routes.telemetry import router as telemetry_router
 from app.api.routes.status import router as status_router
+from app.api.routes.realtime import router as realtime_router
+from app.realtime.event_bus import event_bus
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Set the event loop for the event bus when the application starts
+    event_bus.set_loop(asyncio.get_running_loop())
+    yield
+    # Clean up resources if necessary on shutdown
 
 app = FastAPI(
     title="STALLION AEROSAR Backend",
     version="0.1.0",
     description="Backend communication layer for the AEROSAR search-and-rescue system.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -30,3 +42,4 @@ app.include_router(reports_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(telemetry_router, prefix="/api/v1")
 app.include_router(status_router, prefix="/api/v1")
+app.include_router(realtime_router, prefix="/api/v1")

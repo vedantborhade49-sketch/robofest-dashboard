@@ -10,6 +10,7 @@ from app.models.report import Report
 from app.models.app_state import AppState
 from app.core.state_manager import StateManager
 from app.core.update_loop import CentralUpdateLoop
+from app.ui.realtime_client import RealtimeClient
 
 class DataService(QObject):
     """
@@ -39,6 +40,7 @@ class DataService(QObject):
     event_added = Signal(object)
     settings_updated = Signal(object)
     state_updated = Signal(object)
+    realtime_status_updated = Signal(str)
 
     def __new__(cls, provider: Optional[DataProvider] = None):
         if cls._instance is None:
@@ -56,6 +58,9 @@ class DataService(QObject):
         self._provider: DataProvider = provider or MockDataProvider()
         self._state_manager = StateManager.instance()
         self._state_manager.initialize_from_provider(self._provider)
+
+        # Handle Mock Mode for WebSocket
+        is_mock = isinstance(self._provider, MockDataProvider)
 
         # --- DATABASE & PERSISTENCE ---
         from app.database.database import init_db
@@ -139,7 +144,56 @@ class DataService(QObject):
         self._settings_service = SettingsService()
         self._settings_service.settings_updated.connect(self._on_settings_updated)
 
+        # Real-time WebSocket Client
+        self._realtime_client = RealtimeClient("ws://127.0.0.1:8000/api/v1/ws")
+        self._realtime_client.set_mock_mode(is_mock)
+        self._realtime_client.event_received.connect(self._on_realtime_event)
+        
+        def handle_connected():
+            if not getattr(self._realtime_client, "_mock_mode", False):
+                self.realtime_status_updated.emit("CONNECTED")
+                
+        def handle_disconnected():
+            if not getattr(self._realtime_client, "_mock_mode", False):
+                self.realtime_status_updated.emit("DISCONNECTED")
+                
+        self._realtime_client.connected.connect(handle_connected)
+        self._realtime_client.disconnected.connect(handle_disconnected)
+        
+        if is_mock:
+            self.realtime_status_updated.emit("MOCK")
+        else:
+            self._realtime_client.connect_to_server()
+
         self._initialized = True
+
+    def _on_realtime_event(self, event_data: dict):
+        try:
+            event_type = event_data.get("event_type")
+            payload = event_data.get("payload", {})
+            
+            if event_type == "INCIDENT_CREATED":
+                incident_data = payload.get("incident")
+                if incident_data:
+                    from app.models.incident import Incident
+                    incident = Incident(**incident_data)
+                    # Use internal StateManager method to avoid re-triggering provider saves
+                    self._state_manager.add_incident(incident, auto_create_event_and_report=False)
+            
+            elif event_type == "INCIDENT_STATUS_CHANGED":
+                incident_id = payload.get("incident_id")
+                new_status = payload.get("new_status")
+                if incident_id and new_status:
+                    incident = self._state_manager.get_incident(incident_id)
+                    if incident:
+                        incident.status = new_status
+                        self._state_manager.update_incident(incident)
+                        
+            elif event_type == "EVIDENCE_CREATED":
+                pass # The app will fetch it via REST if needed, or we can update the incident
+        except Exception as e:
+            import logging
+            logging.error(f"Error handling realtime event: {e}")
 
     def _on_settings_updated(self, settings):
         self._state_manager.update_settings(settings)
@@ -158,6 +212,15 @@ class DataService(QObject):
         self._provider = provider
         self._update_loop.set_provider(provider)
         self._state_manager.initialize_from_provider(provider)
+        
+        is_mock = isinstance(provider, MockDataProvider)
+        if hasattr(self, "_realtime_client"):
+            self._realtime_client.set_mock_mode(is_mock)
+            if not is_mock:
+                self.realtime_status_updated.emit("DISCONNECTED")
+                self._realtime_client.connect_to_server()
+            else:
+                self.realtime_status_updated.emit("MOCK")
 
     # -------------------------------------------------------------
     # GETTERS — Guaranteed Single Source of Truth from StateManager
@@ -210,18 +273,20 @@ class DataService(QObject):
     def _on_detections_from_worker(self, detections):
         # Update central state and emit signals
         try:
-            self._state_manager._state.detections = detections
-            self._state_manager.detections_updated.emit(detections)
-            self.detections_updated.emit(detections)
+            if self._state_manager._state:
+                self._state_manager._state.detections = detections
+                self._state_manager.detections_updated.emit(detections)
+                self.detections_updated.emit(detections)
         except Exception:
             pass
 
     def _on_status_from_worker(self, status):
         try:
             # convert PerceptionStatus to AIStatus-like structure if needed
-            self._state_manager._state.ai = status
-            self._state_manager.ai_updated.emit(status)
-            self.ai_updated.emit(status)
+            if self._state_manager._state:
+                self._state_manager._state.ai = status
+                self._state_manager.ai_updated.emit(status)
+                self.ai_updated.emit(status)
         except Exception:
             pass
 

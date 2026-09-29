@@ -314,6 +314,31 @@ class StateManager(QObject):
                 self.state_updated.emit(self._state)
                 break
 
+    def update_incident_status(self, incident_id: str, new_status: str):
+        """Centralized lifecycle transition validation and event emission for incident status changes."""
+        incident = self.get_incident(incident_id)
+        if incident is None:
+            return None
+        from app.models.incident import IncidentStatus
+        if not IncidentStatus.validate_transition(incident.status, new_status):
+            raise ValueError(f"Invalid status transition from {incident.status} to {new_status}")
+        previous_status = incident.status
+        incident.status = new_status
+        self.update_incident(incident)
+        ev = Event(
+            event_id=f"EVT-{incident.incident_id.replace('INC-', '')}-{new_status}",
+            timestamp=datetime.now(),
+            level="SUCCESS" if new_status in {"CONFIRMED", "RESOLVED"} else "INFO",
+            source="INCIDENT",
+            event_type="INCIDENT_STATUS",
+            message=f"Incident {incident.incident_id} moved from {previous_status} to {new_status} by operator.",
+            mission_id=incident.mission_id,
+            incident_id=incident.incident_id,
+            details={"previous_status": previous_status, "new_status": new_status},
+        )
+        self.add_event(ev)
+        return incident
+
     def add_event(self, event: Event):
         """Adds an event to central state and emits signals."""
         if not self._state:

@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.incidents.incident_engine import IncidentEngine
 from app.models.detection import Detection, BoundingBox
@@ -16,7 +16,7 @@ def make_detection(class_name="person", conf=0.9, frame_id=1, w=1280, h=720, tim
         source="test",
         image_width=w,
         image_height=h,
-        timestamp=timestamp or datetime.utcnow(),
+        timestamp=timestamp or datetime.now(timezone.utc),
     )
 
 
@@ -39,7 +39,7 @@ class TestIncidentEngine(unittest.TestCase):
 
     def test_duplicate_suppression(self):
         eng = IncidentEngine()
-        t0 = datetime.utcnow()
+        t0 = datetime.now(timezone.utc)
         det1 = make_detection(timestamp=t0)
         det2 = make_detection(timestamp=t0 + timedelta(milliseconds=100))
         incs1 = eng.process_detections([det1])

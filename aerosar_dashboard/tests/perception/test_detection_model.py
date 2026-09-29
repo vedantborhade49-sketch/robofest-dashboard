@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from app.perception.models import Detection, BBox
 
 class TestDetectionModel(unittest.TestCase):
@@ -7,7 +7,7 @@ class TestDetectionModel(unittest.TestCase):
         bb = BBox(x1=10, y1=20, x2=110, y2=220)
         det = Detection(
             detection_id='D-1',
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             frame_id=1,
             class_id=0,
             class_name='person',

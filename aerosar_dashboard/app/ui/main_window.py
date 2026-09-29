@@ -64,6 +64,10 @@ class MainWindow(QMainWindow):
         # Connect signals
         self.sidebar.page_selected.connect(self._on_page_changed)
         
+        from app.services.data_service import DataService
+        self.data_service = DataService()
+        self.data_service.realtime_status_updated.connect(self.header.set_realtime_status)
+        
         # Cross-view navigation connections
         self.incidents_view.navigate_to_map.connect(self._on_navigate_to_map)
         self.map_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)

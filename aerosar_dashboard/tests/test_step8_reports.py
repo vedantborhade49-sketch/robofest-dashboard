@@ -79,6 +79,7 @@ class TestStep8Reports(unittest.TestCase):
 
         # Test human review via service
         r2 = service.get_report("RPT-002")
+        self.assertIsNotNone(r2)
         self.assertEqual(r2.human_review_status, "PENDING REVIEW")
         success = service.review_report("RPT-002")
         self.assertTrue(success)
@@ -118,6 +119,7 @@ class TestStep8Reports(unittest.TestCase):
     def test_report_detail_widget(self):
         provider = MockDataProvider()
         r1 = provider.get_report("RPT-001")
+        assert r1 is not None
 
         detail = ReportDetail()
         detail.show_report(r1)
@@ -137,6 +139,7 @@ class TestStep8Reports(unittest.TestCase):
         detail.btn_mark_reviewed.click()
         # Since r1 was already reviewed, check signal emission with another report
         r3 = provider.get_report("RPT-003")
+        assert r3 is not None
         detail.show_report(r3)
         self.assertEqual(detail.btn_mark_reviewed.text(), "MARK AS REVIEWED")
         detail.btn_mark_reviewed.click()
@@ -159,6 +162,7 @@ class TestStep8Reports(unittest.TestCase):
             target_id = gen_reports[0].report_id
             view._on_review_report(target_id)
             updated = view.data_service.get_report(target_id)
+            assert updated is not None
             self.assertEqual(updated.human_review_status, "REVIEWED")
 
     def test_navigation_and_regression(self):

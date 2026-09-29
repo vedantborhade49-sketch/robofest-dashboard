@@ -2,6 +2,10 @@ class ReadOnly:
     def __get__(self, obj, objtype=None):
         return 1
 
+    def __set__(self, obj, value):
+        # Implement your setter logic here, e.g., storing the value in obj
+        pass
+
 class A:
     x = ReadOnly()
 
