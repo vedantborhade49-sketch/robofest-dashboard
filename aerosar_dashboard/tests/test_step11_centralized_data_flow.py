@@ -138,6 +138,15 @@ class TestStep11CentralizedDataFlow(unittest.TestCase):
 
         # Trigger tick while window is open — no crashes
         self.data_service.update_loop.trigger_immediate_tick()
+        # Cleanup: close UI and stop central update loop to avoid background threads
+        try:
+            win.close()
+        except Exception:
+            pass
+        try:
+            self.data_service.update_loop.stop()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     unittest.main()

@@ -167,6 +167,8 @@ class TestStep10Settings(unittest.TestCase):
         self.assertEqual(win.views[5], win.reports_view)
         self.assertEqual(win.views[6], win.event_log_view)
         self.assertEqual(win.views[7], win.settings_view)
+        # Close the main window to ensure any background threads/timers are shutdown
+        win.close()
 
 if __name__ == "__main__":
     unittest.main()

@@ -74,6 +74,15 @@ class MainWindow(QMainWindow):
         # Set initial page
         self.sidebar.set_active_page(0)
         self._on_page_changed(0, "Overview")
+
+    def closeEvent(self, event):
+        # Ensure perception threads are cleaned up on exit
+        try:
+            if getattr(self, "live_feed_view", None) is not None:
+                self.live_feed_view.shutdown_perception()
+        except Exception:
+            pass
+        super().closeEvent(event)
         
     def _setup_views(self):
         # Instantiate views and keep references

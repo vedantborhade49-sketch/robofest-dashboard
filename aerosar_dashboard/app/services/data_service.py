@@ -131,6 +131,9 @@ class DataService(QObject):
         )
         self._update_loop.start()
 
+        # Optional perception integration (worker managed by UI but we allow programmatic hook)
+        self._perception_worker = None
+
         # Connect settings service updates to central loop and state
         from app.services.settings_service import SettingsService
         self._settings_service = SettingsService()
@@ -189,6 +192,38 @@ class DataService(QObject):
 
     def get_detections(self):
         return self._state_manager.get_detections()
+
+    def get_settings(self):
+        return self._state_manager.get_settings()
+
+    def attach_perception_worker(self, worker):
+        """Attach a PerceptionWorker (Qt QObject) to propagate detections and status into central state."""
+        if worker is None:
+            return
+        self._perception_worker = worker
+        try:
+            worker.detections_ready.connect(self._on_detections_from_worker)
+            worker.status_updated.connect(self._on_status_from_worker)
+        except Exception:
+            pass
+
+    def _on_detections_from_worker(self, detections):
+        # Update central state and emit signals
+        try:
+            self._state_manager._state.detections = detections
+            self._state_manager.detections_updated.emit(detections)
+            self.detections_updated.emit(detections)
+        except Exception:
+            pass
+
+    def _on_status_from_worker(self, status):
+        try:
+            # convert PerceptionStatus to AIStatus-like structure if needed
+            self._state_manager._state.ai = status
+            self._state_manager.ai_updated.emit(status)
+            self.ai_updated.emit(status)
+        except Exception:
+            pass
 
     def get_incidents(self) -> List[Incident]:
         return self._state_manager.get_incidents()

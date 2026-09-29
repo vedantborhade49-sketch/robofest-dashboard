@@ -32,6 +32,9 @@ class DashboardSettings(BaseModel):
     camera_fps: int = Field(default=30, gt=0, description="Target frame rate")
     mirror_preview: bool = False
     detection_overlay: bool = True
+    # Perception runtime
+    perception_enabled: bool = True
+    perception_camera_index: int = 0
 
     # 5. MAP
     map_show_grid: bool = True

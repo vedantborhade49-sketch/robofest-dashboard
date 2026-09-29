@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime, timedelta
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QObject, QTimer, Signal, QCoreApplication
 
 from app.core.state_manager import StateManager
 from app.data.provider import DataProvider
@@ -25,8 +25,11 @@ class CentralUpdateLoop(QObject):
         self._last_successful_sync: datetime = datetime.now()
         self._stale_threshold_seconds: float = 4.0
 
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._on_tick)
+        # Create a QTimer only when a Qt application/event-loop exists.
+        # In unit tests there may be no Q(Core)Application which makes timers
+        # unreliable and can cause thread shutdown warnings. Defer timer
+        # creation until start() when an application instance is present.
+        self._timer = None
 
     def set_provider(self, provider: DataProvider):
         """Sets or replaces the underlying data provider."""
@@ -37,11 +40,26 @@ class CentralUpdateLoop(QObject):
     def set_interval(self, interval_ms: int):
         """Dynamically reconfigures loop rate (e.g. from Settings)."""
         self.interval_ms = max(50, interval_ms)
-        if self._timer.isActive():
+        if self._timer is not None and self._timer.isActive():
             self._timer.setInterval(self.interval_ms)
 
     def start(self):
         """Starts the central update heartbeat."""
+        # If no Qt application is present (e.g. running unit tests), avoid
+        # creating and starting a QTimer since there is no event loop to drive it.
+        if QCoreApplication.instance() is None:
+            # Perform a single synchronous initial sync and return; callers
+            # can invoke trigger_immediate_tick() to advance the loop manually.
+            if self.provider and self.state_manager:
+                self.provider.step_simulation()
+                self.state_manager.sync_from_provider(self.provider)
+            return
+
+        # Ensure timer exists and is parented correctly to this QObject
+        if self._timer is None:
+            self._timer = QTimer(self)
+            self._timer.timeout.connect(self._on_tick)
+
         if not self._timer.isActive():
             # Initial sync
             if self.provider and self.state_manager:
@@ -51,11 +69,11 @@ class CentralUpdateLoop(QObject):
 
     def stop(self):
         """Stops the central update loop."""
-        if self._timer.isActive():
+        if self._timer is not None and self._timer.isActive():
             self._timer.stop()
 
     def is_running(self) -> bool:
-        return self._timer.isActive()
+        return self._timer.isActive() if self._timer is not None else False
 
     def trigger_immediate_tick(self):
         """Executes a single synchronous step cycle on demand."""

@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QSizePolicy
 )
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QPainter, QColor, QPen, QImage, QPixmap
+import cv2
 from app.ui.theme import Theme
 from app.models.camera import Camera
 from app.models.ai import AIStatus
@@ -24,6 +25,7 @@ class CameraPanel(QFrame):
         self.setMinimumSize(640, 480)
         
         self.detections: List[Detection] = []
+        self._pixmap: QPixmap | None = None
         
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -42,25 +44,60 @@ class CameraPanel(QFrame):
         self.detections = detections
         # Trigger a repaint to draw the new bounding boxes
         self.update()
+
+    def update_frame(self, frame):
+        try:
+            if frame is None:
+                return
+            # Convert BGR (OpenCV) to RGB
+            if frame.ndim == 3 and frame.shape[2] == 3:
+                img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = img.shape
+                bytes_per_line = ch * w
+                qimg = QImage(img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            else:
+                # grayscale or unexpected format
+                h, w = frame.shape[:2]
+                bytes_per_line = w
+                qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_Grayscale8)
+
+            self._pixmap = QPixmap.fromImage(qimg)
+            # hide placeholder labels when showing real frames
+            self.lbl_main.hide()
+            self.lbl_cam.hide()
+            self.update()
+        except Exception:
+            return
         
     def paintEvent(self, event):
         super().paintEvent(event)
-        
-        if not self.detections:
-            return
-            
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
+
         w = self.width()
         h = self.height()
-        
+
+        # draw camera frame if available
+        if self._pixmap is not None:
+            painter.drawPixmap(0, 0, w, h, self._pixmap)
+
+        if not self.detections:
+            painter.end()
+            return
+
         for det in self.detections:
-            # bbox is normalized 0.0-1.0, representing center_x, center_y, w, h
-            bw = det.bbox.width * w
-            bh = det.bbox.height * h
-            bx = (det.bbox.x * w) - (bw / 2)
-            by = (det.bbox.y * h) - (bh / 2)
+            bbox = det.bbox
+            if getattr(bbox, "x1", None) is not None and getattr(bbox, "x2", None) is not None and det.image_width and det.image_height:
+                bx = (bbox.x1 / det.image_width) * w
+                by = (bbox.y1 / det.image_height) * h
+                bw = ((bbox.x2 - bbox.x1) / det.image_width) * w
+                bh = ((bbox.y2 - bbox.y1) / det.image_height) * h
+            else:
+                bw = bbox.width * w
+                bh = bbox.height * h
+                bx = (bbox.x * w) - (bw / 2)
+                by = (bbox.y * h) - (bh / 2)
             
             rect = QRectF(bx, by, bw, bh)
             
@@ -122,12 +159,44 @@ class AIPerceptionPanel(BasePanel):
         return lbl
 
     def update_data(self, ai: AIStatus):
-        if not ai: return
-        self.model_lbl.setText(ai.model_name)
-        self.status_lbl.setText(ai.status)
-        self.fps_lbl.setText(f"{ai.inference_fps:.1f} FPS")
-        self.det_count_lbl.setText(str(ai.detections_count))
-        self.device_lbl.setText(ai.device)
+        if not ai:
+            return
+        # support both AIStatus and PerceptionStatus shapes
+        model_name = getattr(ai, "model_name", "-")
+        running = getattr(ai, "running", None)
+        model_loaded = getattr(ai, "model_loaded", None)
+        # status string: prefer explicit 'status' if present, else derive
+        status_text = getattr(ai, "status", None)
+        if status_text is None:
+            if running is True:
+                status_text = "RUNNING"
+            elif model_loaded:
+                status_text = "LOADED"
+            else:
+                status_text = "STOPPED"
+
+        # fps: prefer 'inference_fps' or 'fps', else compute from inference_time_ms
+        fps = getattr(ai, "inference_fps", None)
+        if fps is None:
+            fps = getattr(ai, "fps", None)
+        if fps is None:
+            inf_ms = getattr(ai, "inference_time_ms", 0.0)
+            fps = (1000.0 / inf_ms) if inf_ms and inf_ms > 0 else 0.0
+
+        det_count = getattr(ai, "detections_count", None)
+        if det_count is None:
+            det_count = getattr(ai, "detection_count", 0)
+
+        device = getattr(ai, "device", "-")
+
+        self.model_lbl.setText(model_name)
+        self.status_lbl.setText(status_text)
+        try:
+            self.fps_lbl.setText(f"{float(fps):.1f} FPS")
+        except Exception:
+            self.fps_lbl.setText("0.0 FPS")
+        self.det_count_lbl.setText(str(det_count))
+        self.device_lbl.setText(device)
 
 
 class DetectionListPanel(BasePanel):
