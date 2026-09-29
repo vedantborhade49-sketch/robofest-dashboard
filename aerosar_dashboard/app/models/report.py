@@ -13,7 +13,7 @@ class IncidentSummary(BaseModel):
     type: str = "PERSON DETECTED"
     confidence: float
     timestamp: datetime
-    location: Location
+    location: Optional[Location] = None
     status: str = "NEW"
 
 class Report(BaseModel):

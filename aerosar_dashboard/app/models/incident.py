@@ -48,7 +48,7 @@ class Incident(BaseModel):
     confidence: float
     timestamp: datetime
     bbox: Optional[BoundingBox] = None
-    location: Location
+    location: Optional[Location] = None
     evidence_id: Optional[str] = None
     evidence_image: Optional[str] = None
     status: IncidentStatus | str = IncidentStatus.NEW  # NEW | REVIEW | CONFIRMED | RESOLVED | DISMISSED

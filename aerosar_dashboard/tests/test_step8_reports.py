@@ -40,6 +40,7 @@ class TestStep8Reports(unittest.TestCase):
             status="CONFIRMED"
         )
         self.assertEqual(summary.incident_id, "INC-001")
+        assert summary.location is not None
         self.assertEqual(summary.location.x, 12.4)
 
         report = Report(

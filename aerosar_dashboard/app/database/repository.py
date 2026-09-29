@@ -89,9 +89,10 @@ class Repository:
                 db_incident.bbox_width = incident.bbox.width
                 db_incident.bbox_height = incident.bbox.height
                 
-            db_incident.location_x = incident.location.x
-            db_incident.location_y = incident.location.y
-            db_incident.location_z = incident.location.z
+            if incident.location:
+                db_incident.location_x = incident.location.x
+                db_incident.location_y = incident.location.y
+                db_incident.location_z = incident.location.z
             db_incident.evidence_id = getattr(incident, "evidence_id", None)
             db_incident.evidence_image = incident.evidence_image
             status_val = getattr(incident.status, "value", incident.status)
@@ -200,9 +201,16 @@ class Repository:
             
             db_report.summary_incident_id = report.incident_summary.incident_id
             db_report.summary_timestamp = report.incident_summary.timestamp
-            db_report.summary_loc_x = report.incident_summary.location.x
-            db_report.summary_loc_y = report.incident_summary.location.y
-            db_report.summary_loc_z = report.incident_summary.location.z
+            
+            if report.incident_summary.location:
+                db_report.summary_loc_x = report.incident_summary.location.x
+                db_report.summary_loc_y = report.incident_summary.location.y
+                db_report.summary_loc_z = report.incident_summary.location.z
+            else:
+                db_report.summary_loc_x = 0.0
+                db_report.summary_loc_y = 0.0
+                db_report.summary_loc_z = 0.0
+                
             db_report.summary_status = report.incident_summary.status
             
             db_report.ai_report = report.ai_report
