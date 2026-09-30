@@ -68,7 +68,8 @@ class TestDatabasePersistence(unittest.TestCase):
         self.assertEqual(retrieved_inc.type, "FIRE")
         self.assertEqual(retrieved_inc.location.x, 10.0)
         if retrieved_inc.bbox:
-            self.assertEqual(retrieved_inc.bbox.width, 0.1)
+            import math
+            self.assertTrue(math.isclose(retrieved_inc.bbox.width, 0.1, abs_tol=1e-5))
 
     def test_03_event_persistence(self):
         # Create

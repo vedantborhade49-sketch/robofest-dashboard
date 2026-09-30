@@ -132,9 +132,16 @@ class TestFastAPIStep13(unittest.TestCase):
         self.assertEqual(list_events.status_code, 200)
         self.assertTrue(any(item["event_id"] == "EVT-API-001" for item in list_events.json()))
 
-        telemetry_res = self.client.get("/api/v1/telemetry")
-        self.assertEqual(telemetry_res.status_code, 200)
-        self.assertIn("altitude", telemetry_res.json())
+        from app.models.telemetry import TelemetryState
+        telem = TelemetryState()
+        telem.position.z = 120.0
+        
+        from unittest.mock import patch
+        with patch('app.core.state_manager.StateManager.get_telemetry', return_value=telem):
+            telemetry_res = self.client.get("/api/v1/telemetry/position")
+            self.assertEqual(telemetry_res.status_code, 200)
+            self.assertIn("z", telemetry_res.json())
+            self.assertEqual(telemetry_res.json()["z"], 120.0)
 
     def test_status_endpoints(self):
         self.assertEqual(self.client.get("/api/v1/drone/status").status_code, 200)

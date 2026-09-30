@@ -25,6 +25,7 @@ class TestStep19LLM(unittest.TestCase):
             confidence=0.91,
             timestamp=datetime.now(timezone.utc),
             location=Location(x=10.0, y=20.0, z=30.0),
+            spatial_status="ESTIMATED",
             status="NEW"
         )
         

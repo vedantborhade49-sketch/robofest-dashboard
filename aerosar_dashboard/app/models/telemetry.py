@@ -28,6 +28,15 @@ class PositionTelemetry(BaseModel):
     frame: str = "LOCAL / SLAM"
     heading: float = 127.0           # degrees
 
+class GPSTelemetry(BaseModel):
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    altitude: Optional[float] = None
+    satellites: int = 0
+    fix_type: int = 0
+    hdop: float = 99.99
+    vdop: float = 99.99
+
 class PowerTelemetry(BaseModel):
     battery_percent: float = 82.0    # %
     voltage: float = 15.7            # Volts
@@ -42,6 +51,7 @@ class CommunicationTelemetry(BaseModel):
     packet_loss_percent: float = 0.2 # %
     uplink: str = "CONNECTED"
     downlink: str = "CONNECTED"
+    heartbeat_age: float = 0.0
 
 class SensorStatus(BaseModel):
     imu: str = "READY"
@@ -77,6 +87,7 @@ class TelemetryHistoryPoint(BaseModel):
 class TelemetryState(BaseModel):
     flight: FlightTelemetry = Field(default_factory=FlightTelemetry)
     position: PositionTelemetry = Field(default_factory=PositionTelemetry)
+    gps: GPSTelemetry = Field(default_factory=GPSTelemetry)
     power: PowerTelemetry = Field(default_factory=PowerTelemetry)
     communication: CommunicationTelemetry = Field(default_factory=CommunicationTelemetry)
     sensors: SensorStatus = Field(default_factory=SensorStatus)

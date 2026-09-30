@@ -255,9 +255,10 @@ class CommunicationPanel(BaseTelemetryPanel):
         self.val_link = self._add_item(grid, 0, 0, "LINK STATUS", "CONNECTED", Theme.STATUS_SUCCESS)
         self.val_sig = self._add_item(grid, 0, 1, "SIGNAL", "87%", Theme.TEXT_PRIMARY)
         self.val_lat = self._add_item(grid, 1, 0, "LATENCY", "38 ms", Theme.TEXT_PRIMARY)
-        self.val_loss = self._add_item(grid, 1, 1, "PACKET LOSS", "0.2%", Theme.STATUS_SUCCESS)
-        self.val_up = self._add_item(grid, 2, 0, "UPLINK", "CONNECTED", Theme.TEXT_SECONDARY)
-        self.val_down = self._add_item(grid, 2, 1, "DOWNLINK", "CONNECTED", Theme.TEXT_SECONDARY)
+        self.val_hb = self._add_item(grid, 1, 1, "HEARTBEAT AGE", "0.0 s", Theme.STATUS_SUCCESS)
+        self.val_loss = self._add_item(grid, 2, 0, "PACKET LOSS", "0.2%", Theme.STATUS_SUCCESS)
+        self.val_up = self._add_item(grid, 2, 1, "UPLINK", "CONNECTED", Theme.TEXT_SECONDARY)
+        self.val_down = self._add_item(grid, 3, 0, "DOWNLINK", "CONNECTED", Theme.TEXT_SECONDARY)
 
         self.layout.addLayout(grid)
         self.layout.addStretch()
@@ -285,6 +286,10 @@ class CommunicationPanel(BaseTelemetryPanel):
         self.val_sig.setStyleSheet(f"color: {sig_col}; font-size: 13px; font-weight: bold; font-family: monospace;")
 
         self.val_lat.setText(f"{int(c.latency_ms)} ms")
+        
+        hb_col = Theme.STATUS_SUCCESS if c.heartbeat_age < 1.0 else Theme.STATUS_WARNING
+        self.val_hb.setText(f"{c.heartbeat_age:.1f} s")
+        self.val_hb.setStyleSheet(f"color: {hb_col}; font-size: 13px; font-weight: bold; font-family: monospace;")
 
         loss_col = Theme.STATUS_SUCCESS if c.packet_loss_percent < 5.0 else Theme.STATUS_WARNING
         self.val_loss.setText(f"{c.packet_loss_percent:.1f}%")
@@ -453,3 +458,45 @@ class CompanionComputerPanel(BaseTelemetryPanel):
         self.val_temp.setText(f"{cc.temperature_c:.1f}°C")
         self.val_temp.setStyleSheet(f"color: {temp_col}; font-size: 13px; font-weight: bold; font-family: monospace;")
         self.val_ai.setText(cc.ai_status)
+
+from app.models.telemetry import GPSTelemetry
+
+class GPSTelemetryPanel(BaseTelemetryPanel):
+    def __init__(self):
+        super().__init__("GPS TELEMETRY (GLOBAL)")
+        self._setup_content()
+
+    def _setup_content(self):
+        grid = QGridLayout()
+        grid.setSpacing(8)
+        grid.setHorizontalSpacing(16)
+
+        self.val_lat = self._add_item(grid, 0, 0, "LATITUDE", "N/A")
+        self.val_lon = self._add_item(grid, 0, 1, "LONGITUDE", "N/A")
+        self.val_sats = self._add_item(grid, 1, 0, "SATELLITES", "0", Theme.TEXT_SECONDARY)
+        self.val_alt = self._add_item(grid, 1, 1, "ALTITUDE (MSL)", "N/A")
+
+        self.layout.addLayout(grid)
+        self.layout.addStretch()
+
+    def _add_item(self, grid: QGridLayout, r: int, c: int, title: str, init_val: str, color: str = Theme.TEXT_PRIMARY) -> QLabel:
+        box = QWidget()
+        l = QVBoxLayout(box)
+        l.setContentsMargins(0, 0, 0, 0)
+        l.setSpacing(2)
+
+        t = QLabel(title)
+        t.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 9px; font-weight: bold; letter-spacing: 0.5px;")
+        v = QLabel(init_val)
+        v.setStyleSheet(f"color: {color}; font-size: 13px; font-weight: bold; font-family: monospace;")
+
+        l.addWidget(t)
+        l.addWidget(v)
+        grid.addWidget(box, r, c)
+        return v
+
+    def update_data(self, g: GPSTelemetry):
+        self.val_lat.setText(f"{g.latitude:.6f}°" if g.latitude is not None else "N/A")
+        self.val_lon.setText(f"{g.longitude:.6f}°" if g.longitude is not None else "N/A")
+        self.val_sats.setText(str(g.satellites))
+        self.val_alt.setText(f"{g.altitude:.1f} m" if g.altitude is not None else "N/A")

@@ -4,7 +4,8 @@ from app.models.incident import Incident
 from app.models.report import Report
 from app.rag.rag_service import RAGService
 from app.llm.service import LLMService
-from app.realtime.websocket_manager import manager as ws_manager
+from app.realtime.event_bus import event_bus
+from app.realtime.events import EventType
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +35,14 @@ class IntelligenceService:
         report = self.llm_service.generate_report(incident, rag_result)
 
         # 3. Publish WebSocket event
-        event_payload = {
-            "event_type": "REPORT_GENERATED",
-            "mission_id": incident.mission_id,
-            "payload": {
+        event_bus.publish(
+            EventType.REPORT_GENERATED,
+            payload={
                 "report_id": report.report_id,
                 "incident_id": incident.incident_id,
                 "status": report.status
-            }
-        }
-        
-        await ws_manager.broadcast_json(event_payload)
+            },
+            mission_id=incident.mission_id
+        )
 
         return report

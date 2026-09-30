@@ -69,6 +69,14 @@ class DashboardSettings(BaseModel):
     lidar_max_range: float = 20.0
     lidar_frame: str = "base_link"
 
+    # 10. MAVLink / TELEMETRY
+    mavlink_enabled: bool = True
+    mavlink_provider: str = "mock"
+    mavlink_connection_type: str = "udp"
+    mavlink_connection_string: str = "udp:127.0.0.1:14550"
+    mavlink_baud_rate: int = 115200
+    telemetry_update_interval_ms: int = 100
+
     @field_validator("confidence_threshold")
     @classmethod
     def validate_confidence(cls, v: float) -> float:

@@ -34,19 +34,19 @@ class TestStep20Intelligence(unittest.IsolatedAsyncioTestCase):
         
         # Test full flow: Incident -> RAG -> LLM -> Report
         # Ensure that no realtime websocket manager tries to broadcast if it's not setup correctly
-        # We can patch ws_manager to just track calls
-        with patch('app.intelligence.service.ws_manager.broadcast_json') as mock_broadcast:
+        # We can patch event_bus to just track calls
+        with patch('app.intelligence.service.event_bus.publish') as mock_publish:
             report = await intelligence.generate_incident_report(self.incident)
             self.assertIsInstance(report, Report)
             self.assertEqual(report.incident_id, self.incident.incident_id)
             self.assertEqual(report.status, "GENERATED")
             self.assertEqual(report.model_name, "mock-rag-llm")
             
-            # Check if websocket was called
-            mock_broadcast.assert_called_once()
-            call_arg = mock_broadcast.call_args[0][0]
-            self.assertEqual(call_arg["event_type"], "REPORT_GENERATED")
-            self.assertEqual(call_arg["payload"]["report_id"], report.report_id)
+            # Check if event_bus was called
+            mock_publish.assert_called_once()
+            args, kwargs = mock_publish.call_args
+            self.assertEqual(args[0].value, "REPORT_GENERATED")
+            self.assertEqual(kwargs["payload"]["report_id"], report.report_id)
             
     def test_cloud_provider_config(self):
         config = LLMConfig(provider="cloud", api_key="test-key")

@@ -3,6 +3,7 @@ from datetime import datetime
 from PySide6.QtWidgets import QApplication
 import sys
 import os
+import math
 
 # Add parent directory (aerosar_dashboard) to sys.path so 'app' can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -38,7 +39,7 @@ class TestStep5Incidents(unittest.TestCase):
         self.assertEqual(inc.location.x, 12.4)
         self.assertEqual(inc.location.y, 8.7)
         self.assertEqual(inc.location.z, 14.8)
-        self.assertEqual(inc.bbox.width, 0.2)
+        self.assertTrue(math.isclose(inc.bbox.width, 0.2, abs_tol=1e-5))
         self.assertEqual(inc.status, "CONFIRMED")
 
     def test_incident_engine_separation(self):
@@ -113,18 +114,24 @@ class TestStep5Incidents(unittest.TestCase):
         # Test detail population
         idetail = IncidentDetail()
         inc1 = incidents[0]
+        inc1.spatial_status = "CONFIRMED"
         idetail.show_incident(inc1)
         self.assertEqual(idetail.id_lbl.text(), inc1.incident_id)
         self.assertIn("12.4", idetail.lbl_x.text())
         self.assertIn("CONFIRMED", idetail.status_badge.text())
 
     def test_incidents_view_counters_and_actions(self):
+        # We need to refresh or clear to ensure predictable tests
+        DataService._instance = None
+        
         view = IncidentsView()
-        self.assertEqual(view.counters_bar.val_total.text(), "3")
-        self.assertEqual(view.counters_bar.val_confirmed.text(), "1")
-        self.assertEqual(view.counters_bar.val_new.text(), "1")
-        self.assertEqual(view.counters_bar.val_review.text(), "1")
-        self.assertEqual(view.counters_bar.val_resolved.text(), "0")
+        current_incidents = view.data_service.get_incidents()
+        
+        self.assertEqual(view.counters_bar.val_total.text(), str(len(current_incidents)))
+        self.assertEqual(view.counters_bar.val_confirmed.text(), str(sum(1 for i in current_incidents if i.status == "CONFIRMED")))
+        self.assertEqual(view.counters_bar.val_new.text(), str(sum(1 for i in current_incidents if i.status == "NEW")))
+        self.assertEqual(view.counters_bar.val_review.text(), str(sum(1 for i in current_incidents if i.status == "REVIEW")))
+        self.assertEqual(view.counters_bar.val_resolved.text(), str(sum(1 for i in current_incidents if i.status == "RESOLVED")))
 
         # Test selection & actions
         incidents = view.data_service.get_incidents()

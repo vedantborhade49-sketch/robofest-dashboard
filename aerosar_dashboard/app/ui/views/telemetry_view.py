@@ -9,7 +9,7 @@ from app.models.telemetry import TelemetryState
 from app.ui.widgets.telemetry_panels import (
     FlightTelemetryPanel, PositionPanel, PowerPanel,
     CommunicationPanel, SensorStatusPanel, FlightControllerPanel,
-    CompanionComputerPanel
+    CompanionComputerPanel, GPSTelemetryPanel
 )
 from app.ui.widgets.telemetry_graph import TelemetryGraphSection
 
@@ -146,13 +146,15 @@ class TelemetryView(QWidget):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(14)
 
-        # --- Row 1: Flight Telemetry & 3D Local Position ---
+        # --- Row 1: Flight Telemetry & 3D Local Position & GPS ---
         row1 = QHBoxLayout()
         row1.setSpacing(14)
         self.flight_panel = FlightTelemetryPanel()
         self.position_panel = PositionPanel()
+        self.gps_panel = GPSTelemetryPanel()
         row1.addWidget(self.flight_panel, 1)
         row1.addWidget(self.position_panel, 1)
+        row1.addWidget(self.gps_panel, 1)
         content_layout.addLayout(row1)
 
         # --- Row 2: Power & Communication Link ---
@@ -194,6 +196,7 @@ class TelemetryView(QWidget):
         self.header_bar.update_connection(state.communication.link_status)
         self.flight_panel.update_data(state.flight)
         self.position_panel.update_data(state.position)
+        self.gps_panel.update_data(state.gps)
         self.power_panel.update_data(state.power)
         self.comm_panel.update_data(state.communication)
         self.sensor_panel.update_data(state.sensors)

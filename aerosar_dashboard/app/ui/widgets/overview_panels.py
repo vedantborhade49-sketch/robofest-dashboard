@@ -85,24 +85,24 @@ class DroneStatusPanel(BasePanel):
         self.layout.addLayout(grid)
         
         self.drone_id = self._create_value_label("-")
-        self.status = self._create_value_label("-", Theme.ACCENT)
+        self.mode = self._create_value_label("-", Theme.ACCENT)
         self.battery = self._create_value_label("0%")
         self.altitude = self._create_value_label("0.0 m")
         self.speed = self._create_value_label("0.0 m/s")
-        self.heading = self._create_value_label("0°")
+        self.link = self._create_value_label("-")
         
         grid.addWidget(self._create_header_label("DRONE"), 0, 0)
         grid.addWidget(self.drone_id, 1, 0)
-        grid.addWidget(self._create_header_label("STATUS"), 0, 1)
-        grid.addWidget(self.status, 1, 1)
+        grid.addWidget(self._create_header_label("MODE/STATUS"), 0, 1)
+        grid.addWidget(self.mode, 1, 1)
         grid.addWidget(self._create_header_label("BATTERY"), 0, 2)
         grid.addWidget(self.battery, 1, 2)
         grid.addWidget(self._create_header_label("ALTITUDE"), 0, 3)
         grid.addWidget(self.altitude, 1, 3)
         grid.addWidget(self._create_header_label("SPEED"), 0, 4)
         grid.addWidget(self.speed, 1, 4)
-        grid.addWidget(self._create_header_label("HEADING"), 0, 5)
-        grid.addWidget(self.heading, 1, 5)
+        grid.addWidget(self._create_header_label("LINK"), 0, 5)
+        grid.addWidget(self.link, 1, 5)
         
     def _create_header_label(self, text):
         lbl = QLabel(text)
@@ -117,11 +117,17 @@ class DroneStatusPanel(BasePanel):
     def update_data(self, data: Drone):
         if not data: return
         self.drone_id.setText(data.drone_id)
-        self.status.setText(data.status)
+        self.mode.setText(data.status)
         self.battery.setText(f"{data.battery:.0f}%")
         self.altitude.setText(f"{data.altitude:.1f} m")
         self.speed.setText(f"{data.speed:.1f} m/s")
-        self.heading.setText(f"{data.heading:.0f}°")
+        
+        link_str = "CONNECTED" if data.signal_strength > 0 else "LOST"
+        link_col = Theme.STATUS_SUCCESS if data.signal_strength > 30 else Theme.STATUS_WARNING
+        if data.signal_strength <= 0: link_col = Theme.STATUS_CRITICAL
+        
+        self.link.setText(link_str)
+        self.link.setStyleSheet(f"color: {link_col}; font-size: 16px; font-weight: bold; border: none;")
 
 class SystemStatusPanel(BasePanel):
     def __init__(self):

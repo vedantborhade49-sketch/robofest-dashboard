@@ -45,6 +45,8 @@ class StateManager(QObject):
     settings_updated = Signal(object)      # DashboardSettings
     state_updated = Signal(object)         # AppState
     spatial_updated = Signal(object)       # SpatialState
+    telemetry_updated = Signal(object)     # TelemetryState
+    drone_updated = Signal(object)         # DroneStatus
 
     _instance: Optional["StateManager"] = None
 

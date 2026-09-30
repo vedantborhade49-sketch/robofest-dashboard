@@ -75,12 +75,28 @@ class MainWindow(QMainWindow):
         self.incidents_view.navigate_to_reports.connect(self._on_navigate_to_reports)
         self.event_log_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
 
+        # Start backend threads
+        self._start_background_workers()
+
         # Set initial page
         self.sidebar.set_active_page(0)
         self._on_page_changed(0, "Overview")
 
+    def _start_background_workers(self):
+        from app.core.state_manager import StateManager
+        settings = StateManager.instance().get_settings()
+        
+        if settings.mavlink_enabled:
+            from app.telemetry.worker import TelemetryWorker
+            self.telemetry_worker = TelemetryWorker(settings)
+            self.telemetry_worker.start()
+        else:
+            self.telemetry_worker = None
+
     def closeEvent(self, event):
-        # Ensure perception threads are cleaned up on exit
+        # Ensure workers are cleaned up on exit
+        if hasattr(self, "telemetry_worker") and self.telemetry_worker:
+            self.telemetry_worker.stop()
         try:
             if getattr(self, "live_feed_view", None) is not None:
                 self.live_feed_view.shutdown_perception()
