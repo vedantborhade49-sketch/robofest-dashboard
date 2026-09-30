@@ -17,10 +17,11 @@ class CentralUpdateLoop(QObject):
 
     _instance: Optional["CentralUpdateLoop"] = None
 
-    def __init__(self, state_manager: Optional[StateManager] = None, provider: Optional[DataProvider] = None, interval_ms: int = 500):
+    def __init__(self, state_manager: Optional[StateManager] = None, provider: Optional[DataProvider] = None, interval_ms: int = 500, spatial_service=None):
         super().__init__()
         self.state_manager = state_manager or StateManager.instance()
         self.provider = provider
+        self.spatial_service = spatial_service
         self.interval_ms = interval_ms
         self._last_successful_sync: datetime = datetime.now()
         self._stale_threshold_seconds: float = 4.0
@@ -90,6 +91,12 @@ class CentralUpdateLoop(QObject):
 
             # 2. Sync to StateManager
             self.state_manager.sync_from_provider(self.provider)
+            
+            # 3. Update spatial service if available
+            if self.spatial_service:
+                spatial_state = self.spatial_service.update()
+                self.state_manager.update_spatial(spatial_state)
+                
             self._last_successful_sync = datetime.now()
 
             # Clear staleness if was stale

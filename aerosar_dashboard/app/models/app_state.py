@@ -14,6 +14,7 @@ from app.models.incident import Incident
 from app.models.report import Report
 from app.models.event import Event
 from app.models.settings import DashboardSettings
+from app.models.spatial import SpatialState
 
 class AppState(BaseModel):
     """
@@ -33,6 +34,7 @@ class AppState(BaseModel):
     incidents: List[Incident] = Field(default_factory=list)
     reports: List[Report] = Field(default_factory=list)
     events: List[Event] = Field(default_factory=list)
+    spatial: SpatialState = Field(default_factory=SpatialState)
     settings: DashboardSettings = Field(default_factory=DashboardSettings)
     last_updated: datetime = Field(default_factory=datetime.now)
     is_stale: bool = False

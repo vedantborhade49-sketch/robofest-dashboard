@@ -61,6 +61,14 @@ class DashboardSettings(BaseModel):
     max_stored_events: int = Field(default=1000, gt=0)
     console_logging: bool = False
 
+    # 9. SPATIAL / LiDAR
+    lidar_enabled: bool = True
+    lidar_provider: str = "mock"
+    lidar_update_rate: int = 10
+    lidar_min_range: float = 0.1
+    lidar_max_range: float = 20.0
+    lidar_frame: str = "base_link"
+
     @field_validator("confidence_threshold")
     @classmethod
     def validate_confidence(cls, v: float) -> float:

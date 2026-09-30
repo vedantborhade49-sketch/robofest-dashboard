@@ -8,6 +8,7 @@ from PySide6.QtGui import (
 from app.ui.theme import Theme
 from app.models.incident import Incident, Location
 from app.models.map import MapState, SearchBoundary
+from app.models.spatial import SpatialState
 
 class MissionMap(QWidget):
     """
@@ -33,7 +34,11 @@ class MissionMap(QWidget):
 
         self._map_state: Optional[MapState] = None
         self._incidents: List[Incident] = []
+        self._spatial_state: Optional[SpatialState] = None
         self._selected_incident_id: Optional[str] = None
+        
+        self.show_lidar = True
+        self.show_obstacles = True
 
         # Cached transform metrics
         self._offset_x = 50.0
@@ -44,10 +49,11 @@ class MissionMap(QWidget):
         self._min_y = 0.0
         self._max_y = 25.0
 
-    def update_map(self, map_state: MapState, incidents: List[Incident]):
+    def update_map(self, map_state: MapState, incidents: List[Incident], spatial_state: Optional[SpatialState] = None):
         """Updates map telemetry and incidents, triggering repaint."""
         self._map_state = map_state
         self._incidents = incidents
+        self._spatial_state = spatial_state
         if map_state and map_state.search_boundary:
             self._min_x = map_state.search_boundary.min_x
             self._max_x = map_state.search_boundary.max_x
@@ -186,6 +192,14 @@ class MissionMap(QWidget):
 
         # 7. Incident Markers
         self._draw_incidents(painter)
+
+        # 7.1 LiDAR Scan
+        if self.show_lidar:
+            self._draw_lidar(painter)
+            
+        # 7.2 Obstacles
+        if self.show_obstacles:
+            self._draw_obstacles(painter)
 
         # 8. Drone Marker & Sensor FOV Cone
         self._draw_drone(painter)
@@ -521,6 +535,68 @@ class MissionMap(QWidget):
         painter.drawRect(QRectF(lbl_x, lbl_y, lbl_w, 16))
 
         painter.drawText(QRectF(lbl_x + 4, lbl_y + 1, lbl_w - 8, 14), Qt.AlignmentFlag.AlignVCenter, info_str)
+
+    def _draw_lidar(self, painter: QPainter):
+        if not self._spatial_state or not self._spatial_state.latest_scan:
+            return
+            
+        dp = self._map_state.drone_position if self._map_state else None
+        if not dp:
+            return
+            
+        scan = self._spatial_state.latest_scan
+        
+        # We need to transform drone-relative points to world coordinates
+        # The points in scan are in drone local frame (forward = x, left = y)
+        # We must rotate them by drone heading. 
+        # In SLAM: Drone +X is math angle (90 - heading).
+        heading_rad = math.radians(90.0 - self._map_state.drone_heading)
+        
+        painter.setPen(Qt.PenStyle.NoPen)
+        # Use a bright cyan/green for lidar points
+        painter.setBrush(QBrush(QColor(0, 255, 150, 180)))
+        
+        for p in scan.points:
+            # Rotate by drone heading
+            world_x = dp.x + p.x * math.cos(heading_rad) - p.y * math.sin(heading_rad)
+            world_y = dp.y + p.x * math.sin(heading_rad) + p.y * math.cos(heading_rad)
+            
+            sp = self._to_screen(world_x, world_y)
+            painter.drawEllipse(sp, 1.5, 1.5)
+
+    def _draw_obstacles(self, painter: QPainter):
+        if not self._spatial_state or not self._spatial_state.obstacles:
+            return
+            
+        dp = self._map_state.drone_position if self._map_state else None
+        if not dp:
+            return
+            
+        heading_rad = math.radians(90.0 - self._map_state.drone_heading)
+        
+        # Red crosses or small circles for obstacles
+        obs_pen = QPen(QColor(255, 60, 60, 220), 2)
+        painter.setPen(obs_pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        
+        for obs in self._spatial_state.obstacles:
+            world_x = dp.x + obs.x * math.cos(heading_rad) - obs.y * math.sin(heading_rad)
+            world_y = dp.y + obs.x * math.sin(heading_rad) + obs.y * math.cos(heading_rad)
+            
+            sp = self._to_screen(world_x, world_y)
+            
+            # Draw X
+            sz = 4.0
+            painter.drawLine(QPointF(sp.x() - sz, sp.y() - sz), QPointF(sp.x() + sz, sp.y() + sz))
+            painter.drawLine(QPointF(sp.x() - sz, sp.y() + sz), QPointF(sp.x() + sz, sp.y() - sz))
+            
+            # If size estimate is significant, draw a dashed circle
+            if obs.size_estimate and obs.size_estimate > 0.2:
+                r_px = obs.size_estimate * self._scale
+                circle_pen = QPen(QColor(255, 60, 60, 100), 1, Qt.PenStyle.DashLine)
+                painter.setPen(circle_pen)
+                painter.drawEllipse(sp, r_px, r_px)
+                painter.setPen(obs_pen) # restore pen
 
     def _draw_overlays(self, painter: QPainter, w: float, h: float):
         """Draws tactical compass rose, coordinate frame badge, and metric scale bar."""

@@ -1,6 +1,6 @@
 from typing import Optional, List
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QCheckBox
 )
 from PySide6.QtCore import Qt, QTimer, Signal
 from app.ui.theme import Theme
@@ -114,6 +114,20 @@ class MapView(QWidget):
 
         h_layout.addStretch()
 
+        self.cb_show_lidar = QCheckBox("Show LiDAR")
+        self.cb_show_lidar.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        self.cb_show_lidar.setChecked(True)
+        self.cb_show_lidar.toggled.connect(self._on_lidar_toggled)
+        h_layout.addWidget(self.cb_show_lidar)
+
+        self.cb_show_obstacles = QCheckBox("Show Obstacles")
+        self.cb_show_obstacles.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        self.cb_show_obstacles.setChecked(True)
+        self.cb_show_obstacles.toggled.connect(self._on_lidar_toggled)
+        h_layout.addWidget(self.cb_show_obstacles)
+        
+        h_layout.addSpacing(20)
+
         badge = QLabel("LOCAL / GPS-DENIED")
         badge.setStyleSheet(f"""
             QLabel {{
@@ -155,22 +169,36 @@ class MapView(QWidget):
 
     def _init_data(self):
         self._incidents = self.data_service.get_incidents()
-        self._map_state = self.data_service.get_map_state()
-        self.mission_map.update_map(self._map_state, self._incidents)
+        
+        app_state = self.data_service._state_manager.get_state()
+        self._map_state = app_state.map_state if app_state else None
+        self._spatial_state = app_state.spatial if app_state else None
+        
+        self.mission_map.update_map(self._map_state, self._incidents, self._spatial_state)
         self.info_panel.update_data(self._map_state, self._incidents)
+
+    def _on_lidar_toggled(self):
+        self.mission_map.show_lidar = self.cb_show_lidar.isChecked()
+        self.mission_map.show_obstacles = self.cb_show_obstacles.isChecked()
+        self.mission_map.update()
 
     def _start_live_updates(self):
         self.data_service.map_updated.connect(self._on_map_updated)
         self.data_service.incidents_updated.connect(self._on_incidents_updated)
+        self.data_service.spatial_updated.connect(self._on_spatial_updated)
+
+    def _on_spatial_updated(self, spatial_state):
+        self._spatial_state = spatial_state
+        self.mission_map.update_map(self._map_state, self._incidents, self._spatial_state)
 
     def _on_map_updated(self, map_state):
         self._map_state = map_state
-        self.mission_map.update_map(self._map_state, self._incidents)
+        self.mission_map.update_map(self._map_state, self._incidents, self._spatial_state)
         self.info_panel.update_data(self._map_state, self._incidents)
 
     def _on_incidents_updated(self, incidents):
         self._incidents = incidents
-        self.mission_map.update_map(self._map_state, self._incidents)
+        self.mission_map.update_map(self._map_state, self._incidents, self._spatial_state)
         self.info_panel.update_data(self._map_state, self._incidents)
 
     def select_incident(self, incident_id: str):

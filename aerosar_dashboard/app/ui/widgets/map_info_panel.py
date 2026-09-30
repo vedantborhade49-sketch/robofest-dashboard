@@ -144,6 +144,44 @@ class MapInfoPanel(QFrame):
 
         layout.addWidget(mission_box)
 
+        # 5.5 LiDAR / Spatial Status
+        spatial_box = self._create_section_box("SPATIAL SENSOR")
+        sp_layout = QVBoxLayout(spatial_box)
+        sp_layout.setContentsMargins(10, 8, 10, 8)
+        sp_layout.setSpacing(4)
+        
+        row_sp1 = QHBoxLayout()
+        sp_t1 = QLabel("LiDAR STATUS")
+        sp_t1.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+        self.lbl_lidar_status = QLabel("DISCONNECTED")
+        self.lbl_lidar_status.setStyleSheet(f"color: {Theme.STATUS_CRITICAL}; font-size: 11px; font-weight: bold;")
+        row_sp1.addWidget(sp_t1)
+        row_sp1.addStretch()
+        row_sp1.addWidget(self.lbl_lidar_status)
+        sp_layout.addLayout(row_sp1)
+        
+        row_sp2 = QHBoxLayout()
+        sp_t2 = QLabel("SCAN POINTS")
+        sp_t2.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+        self.lbl_lidar_pts = QLabel("0")
+        self.lbl_lidar_pts.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 11px; font-weight: bold;")
+        row_sp2.addWidget(sp_t2)
+        row_sp2.addStretch()
+        row_sp2.addWidget(self.lbl_lidar_pts)
+        sp_layout.addLayout(row_sp2)
+        
+        row_sp3 = QHBoxLayout()
+        sp_t3 = QLabel("NEAREST OBS")
+        sp_t3.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+        self.lbl_lidar_obs = QLabel("-- m")
+        self.lbl_lidar_obs.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold;")
+        row_sp3.addWidget(sp_t3)
+        row_sp3.addStretch()
+        row_sp3.addWidget(self.lbl_lidar_obs)
+        sp_layout.addLayout(row_sp3)
+        
+        layout.addWidget(spatial_box)
+
         # 6. Incidents Overview
         inc_box = self._create_section_box("INCIDENTS")
         ib_layout = QHBoxLayout(inc_box)
@@ -262,6 +300,32 @@ class MapInfoPanel(QFrame):
             self.lbl_progress.setText(f"{prog}%")
             self.progress_bar.setValue(prog)
             self.lbl_explored.setText(f"{prog}%")
+
+        # Update Spatial
+        from app.core.state_manager import StateManager
+        app_state = StateManager.instance().get_state()
+        if app_state and app_state.spatial:
+            spatial = app_state.spatial
+            if spatial.sensor_status == "CONNECTED":
+                self.lbl_lidar_status.setText("CONNECTED")
+                self.lbl_lidar_status.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 11px; font-weight: bold;")
+            else:
+                self.lbl_lidar_status.setText(spatial.sensor_status)
+                self.lbl_lidar_status.setStyleSheet(f"color: {Theme.STATUS_CRITICAL}; font-size: 11px; font-weight: bold;")
+                
+            pts = len(spatial.latest_scan.points) if spatial.latest_scan else 0
+            self.lbl_lidar_pts.setText(str(pts))
+            
+            if spatial.obstacles:
+                min_dist = min(obs.distance for obs in spatial.obstacles)
+                self.lbl_lidar_obs.setText(f"{min_dist:.2f} m")
+                if min_dist < 2.0:
+                    self.lbl_lidar_obs.setStyleSheet(f"color: {Theme.STATUS_WARNING}; font-size: 11px; font-weight: bold;")
+                else:
+                    self.lbl_lidar_obs.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold;")
+            else:
+                self.lbl_lidar_obs.setText("-- m")
+                self.lbl_lidar_obs.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold;")
 
         total_cnt = len(incidents)
         active_cnt = sum(1 for i in incidents if i.status.upper() != "RESOLVED")

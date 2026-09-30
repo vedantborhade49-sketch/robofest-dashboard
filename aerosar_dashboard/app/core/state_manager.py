@@ -44,6 +44,7 @@ class StateManager(QObject):
     event_added = Signal(object)           # Event
     settings_updated = Signal(object)      # DashboardSettings
     state_updated = Signal(object)         # AppState
+    spatial_updated = Signal(object)       # SpatialState
 
     _instance: Optional["StateManager"] = None
 
@@ -142,6 +143,12 @@ class StateManager(QObject):
         if map_st:
             self._state.map_state = map_st
             self.map_updated.emit(map_st)
+
+    def update_spatial(self, spatial_state):
+        if self._state:
+            self._state.spatial = spatial_state
+            self.spatial_updated.emit(spatial_state)
+            self.state_updated.emit(self._state)
 
         # Timestamp & fresh status
         self._state.last_updated = datetime.now()

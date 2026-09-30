@@ -40,6 +40,7 @@ class DataService(QObject):
     event_added = Signal(object)
     settings_updated = Signal(object)
     state_updated = Signal(object)
+    spatial_updated = Signal(object)
     realtime_status_updated = Signal(str)
 
     def __new__(cls, provider: Optional[DataProvider] = None):
@@ -127,12 +128,20 @@ class DataService(QObject):
         self._state_manager.event_added.connect(self.event_added.emit)
         self._state_manager.settings_updated.connect(self.settings_updated.emit)
         self._state_manager.state_updated.connect(self.state_updated.emit)
+        self._state_manager.spatial_updated.connect(self.spatial_updated.emit)
+
+        # Spatial Service
+        from app.spatial.provider import MockLiDARProvider
+        from app.spatial.service import SpatialService
+        self.spatial_service = SpatialService(MockLiDARProvider())
+        self.spatial_service.start()
 
         # Central update loop (500ms heartbeat)
         self._update_loop = CentralUpdateLoop(
             state_manager=self._state_manager,
             provider=self._provider,
-            interval_ms=500
+            interval_ms=500,
+            spatial_service=self.spatial_service
         )
         self._update_loop.start()
 
