@@ -185,27 +185,73 @@ class DataService(QObject):
             event_type = event_data.get("event_type")
             payload = event_data.get("payload", {})
             
-            if event_type == "INCIDENT_CREATED":
-                incident_data = payload.get("incident")
+            if event_type == "TELEMETRY_UPDATE":
+                from app.models.telemetry import TelemetryState, Telemetry
+                # payload is likely a telemetry dump, or partial
+                if "flight" in payload:
+                    telem = Telemetry(**payload["flight"])
+                    # State manager doesn't have a direct "update_telemetry" usually it relies on the loop.
+                    # Wait, StateManager has state.telemetry
+                    if self._state_manager._state:
+                        # Construct a full TelemetryState or just update the flight part
+                        if not self._state_manager._state.telemetry:
+                            self._state_manager._state.telemetry = TelemetryState(flight=telem)
+                        else:
+                            self._state_manager._state.telemetry.flight = telem
+                        self._state_manager.telemetry_updated.emit(self._state_manager._state.telemetry)
+            
+            elif event_type == "INCIDENT_CREATED":
+                # Ensure it's a full incident or just payload
+                incident_data = payload.get("incident", payload)
                 if incident_data:
                     from app.models.incident import Incident
                     incident = Incident(**incident_data)
-                    # Use internal StateManager method to avoid re-triggering provider saves
                     self._state_manager.add_incident(incident, auto_create_event_and_report=False)
             
-            elif event_type == "INCIDENT_STATUS_CHANGED":
-                incident_id = payload.get("incident_id")
-                new_status = payload.get("new_status")
-                if incident_id and new_status:
-                    incident = self._state_manager.get_incident(incident_id)
-                    if incident:
-                        incident.status = new_status
-                        self._state_manager.update_incident(incident)
-                        
-            elif event_type == "EVIDENCE_CREATED":
-                pass # The app will fetch it via REST if needed, or we can update the incident
+            elif event_type == "INCIDENT_UPDATED" or event_type == "INCIDENT_STATUS_CHANGED":
+                incident_data = payload.get("incident", payload)
+                if isinstance(incident_data, dict) and "incident_id" in incident_data:
+                    from app.models.incident import Incident
+                    incident = Incident(**incident_data)
+                    self._state_manager.update_incident(incident)
+                else:
+                    # Fallback for old INCIDENT_STATUS_CHANGED format
+                    incident_id = payload.get("incident_id")
+                    new_status = payload.get("new_status")
+                    if incident_id and new_status:
+                        incident = self._state_manager.get_incident(incident_id)
+                        if incident:
+                            incident.status = new_status
+                            self._state_manager.update_incident(incident)
+                            
+            elif event_type == "SPATIAL_UPDATE":
+                if self._state_manager._state:
+                    from app.models.map import MapState
+                    map_state = MapState(**payload)
+                    self._state_manager._state.map = map_state
+                    self._state_manager.map_updated.emit(map_state)
+
+            elif event_type == "PERCEPTION_STATUS" or event_type == "PERCEPTION_STATUS_UPDATE":
+                if self._state_manager._state:
+                    from app.models.ai import AIStatus
+                    ai_status = AIStatus(**payload)
+                    self._state_manager._state.ai = ai_status
+                    self._state_manager.ai_updated.emit(ai_status)
+                    
+            elif event_type == "HEALTH_UPDATE":
+                if self._state_manager._state:
+                    from app.models.system import SystemHealth
+                    health = SystemHealth(**payload)
+                    self._state_manager._state.system = health
+                    self._state_manager.system_updated.emit(health)
+                    
+            elif event_type == "SYSTEM_EVENT":
+                from app.models.event import Event
+                ev = Event(**payload)
+                self._state_manager.add_event(ev)
+
             elif event_type == "REPORT_GENERATED":
-                report_id = payload.get("report_id")
+                report_id = payload.get("report_id") or payload.get("report", {}).get("report_id")
                 if report_id:
                     import threading
                     import httpx
@@ -219,9 +265,6 @@ class DataService(QObject):
                                 report_data = resp.json()
                                 from app.models.report import Report
                                 report = Report(**report_data)
-                                # Make sure to add it via thread-safe signal or UI thread if needed,
-                                # but StateManager seems to handle standard adds.
-                                # Let's use internal StateManager method.
                                 self._state_manager.add_report(report)
                         except Exception as e:
                             logging.error(f"Failed to fetch generated report {report_id}: {e}")

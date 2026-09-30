@@ -64,8 +64,18 @@ class MainWindow(QMainWindow):
         # Connect signals
         self.sidebar.page_selected.connect(self._on_page_changed)
         
+        import os
         from app.services.data_service import DataService
-        self.data_service = DataService()
+        
+        data_mode = os.environ.get("DATA_MODE", "mock").lower()
+        if data_mode == "live":
+            from app.data.api_provider import APIDataProvider
+            provider = APIDataProvider()
+        else:
+            from app.data.mock_provider import MockDataProvider
+            provider = MockDataProvider()
+            
+        self.data_service = DataService(provider)
         self.data_service.realtime_status_updated.connect(self.header.set_realtime_status)
         
         # Cross-view navigation connections
