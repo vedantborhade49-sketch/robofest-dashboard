@@ -126,6 +126,37 @@ class MapView(QWidget):
         self.cb_show_obstacles.toggled.connect(self._on_lidar_toggled)
         h_layout.addWidget(self.cb_show_obstacles)
         
+        self.cb_show_trajectory = QCheckBox("Show Trajectory")
+        self.cb_show_trajectory.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        self.cb_show_trajectory.setChecked(True)
+        self.cb_show_trajectory.toggled.connect(self._on_lidar_toggled)
+        h_layout.addWidget(self.cb_show_trajectory)
+
+        self.cb_show_occupancy = QCheckBox("Occupancy Map")
+        self.cb_show_occupancy.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        self.cb_show_occupancy.setChecked(True)
+        self.cb_show_occupancy.toggled.connect(self._on_lidar_toggled)
+        h_layout.addWidget(self.cb_show_occupancy)
+
+        from PySide6.QtWidgets import QPushButton
+        self.btn_reset_slam = QPushButton("Reset SLAM")
+        self.btn_reset_slam.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.STATUS_WARNING};
+                border: 1px solid {Theme.STATUS_WARNING};
+                border-radius: 3px;
+                padding: 4px 8px;
+                font-size: 10px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(255, 170, 0, 0.15);
+            }}
+        """)
+        self.btn_reset_slam.clicked.connect(self._on_reset_slam_clicked)
+        h_layout.addWidget(self.btn_reset_slam)
+
         h_layout.addSpacing(20)
 
         badge = QLabel("LOCAL / GPS-DENIED")
@@ -180,7 +211,13 @@ class MapView(QWidget):
     def _on_lidar_toggled(self):
         self.mission_map.show_lidar = self.cb_show_lidar.isChecked()
         self.mission_map.show_obstacles = self.cb_show_obstacles.isChecked()
+        self.mission_map.show_trajectory = self.cb_show_trajectory.isChecked()
+        self.mission_map.show_occupancy = self.cb_show_occupancy.isChecked()
         self.mission_map.update()
+
+    def _on_reset_slam_clicked(self):
+        if hasattr(self.data_service, 'spatial_service'):
+            self.data_service.spatial_service.reset_slam()
 
     def _start_live_updates(self):
         self.data_service.map_updated.connect(self._on_map_updated)

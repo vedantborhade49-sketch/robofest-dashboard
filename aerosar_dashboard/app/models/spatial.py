@@ -14,6 +14,43 @@ class LocalPosition(BaseModel):
     y: float = 0.0
     z: float = 0.0
 
+class Pose(BaseModel):
+    """
+    Vehicle pose in a given coordinate frame.
+    x, y, z in meters. roll, pitch, yaw in radians.
+    """
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    roll: float = 0.0
+    pitch: float = 0.0
+    yaw: float = 0.0
+    timestamp: datetime = Field(default_factory=datetime.now)
+    frame_id: str = "map"
+
+class TrajectoryPoint(BaseModel):
+    """
+    A single point in a historical trajectory.
+    """
+    x: float
+    y: float
+    yaw: float
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+class OccupancyGrid(BaseModel):
+    """
+    2D Occupancy Grid map representation.
+    cells: 0=unknown, 1=free, 2=occupied.
+    """
+    width: int
+    height: int
+    resolution: float = 0.05
+    origin_x: float = 0.0
+    origin_y: float = 0.0
+    cells: List[int] = Field(default_factory=list)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    frame_id: str = "map"
+
 class LiDARPoint(BaseModel):
     """
     A single valid LiDAR measurement point.
@@ -60,3 +97,10 @@ class SpatialState(BaseModel):
     local_position: Optional[LocalPosition] = None
     coordinate_frame: str = "base_link"
     sensor_status: str = "DISCONNECTED" # CONNECTED, DISCONNECTED, ERROR, STALE
+    
+    # SLAM additions
+    current_pose: Optional[Pose] = None
+    trajectory: List[TrajectoryPoint] = Field(default_factory=list)
+    local_map: Optional[OccupancyGrid] = None
+    slam_status: str = "DISABLED" # DISABLED, INITIALIZING, TRACKING, LOST, ERROR
+    slam_quality: str = "N/A"

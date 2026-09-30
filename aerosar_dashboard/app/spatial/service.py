@@ -6,13 +6,15 @@ import math
 
 from app.models.spatial import SpatialState, Obstacle, LocalPosition
 from app.spatial.provider import LiDARProvider
+from app.spatial.slam_provider import SLAMProvider
 from app.spatial.adapter import LiDARAdapter
 
 logger = logging.getLogger(__name__)
 
 class SpatialService:
-    def __init__(self, provider: LiDARProvider):
+    def __init__(self, provider: LiDARProvider, slam_provider: Optional[SLAMProvider] = None):
         self.provider = provider
+        self.slam_provider = slam_provider
         self.adapter = LiDARAdapter()
         self.state = SpatialState()
         self.state.local_position = LocalPosition(x=0.0, y=0.0, z=0.0)
@@ -20,17 +22,23 @@ class SpatialService:
     def start(self):
         logger.info("Starting SpatialService...")
         self.provider.start()
+        if self.slam_provider:
+            self.slam_provider.start()
         self.state.sensor_status = "CONNECTED"
 
     def stop(self):
         logger.info("Stopping SpatialService...")
         self.provider.stop()
+        if self.slam_provider:
+            self.slam_provider.stop()
         self.state.sensor_status = "DISCONNECTED"
 
     def update(self) -> SpatialState:
         """Called periodically by the main update loop to process new LiDAR data."""
         if not self.provider.is_connected():
             self.state.sensor_status = "DISCONNECTED"
+            if self.slam_provider:
+                self.state.slam_status = self.slam_provider.get_status()
             return self.state
 
         raw_scan = self.provider.get_scan()
@@ -49,11 +57,29 @@ class SpatialService:
         self.state.timestamp = datetime.now()
         self.state.sensor_status = "CONNECTED"
         
-        # Basic Obstacle Extraction (Simple naive clustering)
-        # We'll just look for points that are close to each other.
+        # Extract basic obstacles
         self._extract_obstacles(valid_points)
         
+        # SLAM Integration
+        if self.slam_provider:
+            try:
+                self.slam_provider.update(scan)
+                self.state.current_pose = self.slam_provider.get_pose()
+                self.state.local_map = self.slam_provider.get_map()
+                # Must copy trajectory to avoid reference issues if UI reads it
+                self.state.trajectory = list(self.slam_provider.get_trajectory())
+                self.state.slam_status = self.slam_provider.get_status()
+                self.state.slam_quality = self.slam_provider.get_quality()
+            except Exception as e:
+                logger.error(f"SLAM provider error: {e}")
+                self.state.slam_status = "ERROR"
+        
         return self.state
+
+    def reset_slam(self):
+        if self.slam_provider:
+            self.slam_provider.reset()
+            logger.info("SLAM system reset requested")
 
     def _extract_obstacles(self, points):
         """Very basic obstacle extraction for Phase 21."""

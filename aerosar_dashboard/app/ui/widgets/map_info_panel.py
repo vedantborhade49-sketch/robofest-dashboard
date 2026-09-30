@@ -180,6 +180,16 @@ class MapInfoPanel(QFrame):
         row_sp3.addWidget(self.lbl_lidar_obs)
         sp_layout.addLayout(row_sp3)
         
+        row_sp4 = QHBoxLayout()
+        sp_t4 = QLabel("SLAM STATUS")
+        sp_t4.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+        self.lbl_slam_status = QLabel("DISABLED")
+        self.lbl_slam_status.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold;")
+        row_sp4.addWidget(sp_t4)
+        row_sp4.addStretch()
+        row_sp4.addWidget(self.lbl_slam_status)
+        sp_layout.addLayout(row_sp4)
+        
         layout.addWidget(spatial_box)
 
         # 6. Incidents Overview
@@ -326,6 +336,31 @@ class MapInfoPanel(QFrame):
             else:
                 self.lbl_lidar_obs.setText("-- m")
                 self.lbl_lidar_obs.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold;")
+
+            # Update SLAM Status
+            self.lbl_slam_status.setText(spatial.slam_status)
+            if spatial.slam_status == "TRACKING":
+                self.lbl_slam_status.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 11px; font-weight: bold;")
+            elif spatial.slam_status == "LOST":
+                self.lbl_slam_status.setStyleSheet(f"color: {Theme.STATUS_CRITICAL}; font-size: 11px; font-weight: bold;")
+            elif spatial.slam_status == "ERROR":
+                self.lbl_slam_status.setStyleSheet(f"color: {Theme.STATUS_CRITICAL}; font-size: 11px; font-weight: bold;")
+            else:
+                self.lbl_slam_status.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold;")
+
+            # If SLAM is tracking, override position and heading with SLAM pose
+            if spatial.slam_status == "TRACKING" and spatial.current_pose:
+                p = spatial.current_pose
+                self.lbl_x.setText(f"{p.x:.2f} m")
+                self.lbl_y.setText(f"{p.y:.2f} m")
+                # Drone heading in map_state is 0 = North, clockwise.
+                # SLAM yaw is radians, 0 = East (+x), counter-clockwise.
+                # Usually we just show the raw yaw in degrees or transformed heading.
+                # To match previous mapping: map_heading = 90 - degrees(yaw)
+                import math
+                h = (90.0 - math.degrees(p.yaw)) % 360
+                self.lbl_heading.setText(f"{int(h)}°")
+                self.lbl_frame.setText("SLAM (EST)")
 
         total_cnt = len(incidents)
         active_cnt = sum(1 for i in incidents if i.status.upper() != "RESOLVED")

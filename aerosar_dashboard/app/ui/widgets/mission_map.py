@@ -39,6 +39,8 @@ class MissionMap(QWidget):
         
         self.show_lidar = True
         self.show_obstacles = True
+        self.show_trajectory = True
+        self.show_occupancy = True
 
         # Cached transform metrics
         self._offset_x = 50.0
@@ -188,7 +190,8 @@ class MissionMap(QWidget):
         self._draw_boundary_frame(painter, area_rect)
 
         # 6. Flight Trajectory
-        self._draw_trajectory(painter)
+        if self.show_trajectory:
+            self._draw_trajectory(painter)
 
         # 7. Incident Markers
         self._draw_incidents(painter)
@@ -200,6 +203,10 @@ class MissionMap(QWidget):
         # 7.2 Obstacles
         if self.show_obstacles:
             self._draw_obstacles(painter)
+            
+        # 7.3 Occupancy Map
+        if self.show_occupancy:
+            self._draw_occupancy(painter)
 
         # 8. Drone Marker & Sensor FOV Cone
         self._draw_drone(painter)
@@ -330,14 +337,20 @@ class MissionMap(QWidget):
 
     def _draw_trajectory(self, painter: QPainter):
         """Draws the drone's past flight trajectory with glowing path."""
-        if not self._map_state or len(self._map_state.trajectory) < 2:
+        traj = []
+        if self._spatial_state and self._spatial_state.trajectory:
+            traj = self._spatial_state.trajectory
+        elif self._map_state and self._map_state.trajectory:
+            traj = self._map_state.trajectory
+            
+        if len(traj) < 2:
             return
 
         path = QPainterPath()
-        p0 = self._to_screen(self._map_state.trajectory[0].x, self._map_state.trajectory[0].y)
+        p0 = self._to_screen(traj[0].x, traj[0].y)
         path.moveTo(p0)
 
-        for loc in self._map_state.trajectory[1:]:
+        for loc in traj[1:]:
             pt = self._to_screen(loc.x, loc.y)
             path.lineTo(pt)
 
@@ -357,9 +370,77 @@ class MissionMap(QWidget):
         dot_brush = QBrush(QColor(0, 180, 216, 180))
         painter.setPen(dot_pen)
         painter.setBrush(dot_brush)
-        for loc in self._map_state.trajectory[:-1]:
+        for loc in traj[:-1]:
             pt = self._to_screen(loc.x, loc.y)
             painter.drawEllipse(pt, 2.0, 2.0)
+
+    def _draw_occupancy(self, painter: QPainter):
+        if not self._spatial_state or not self._spatial_state.local_map:
+            return
+            
+        grid = self._spatial_state.local_map
+        if not grid.cells:
+            return
+            
+        # Optimization: drawing thousands of individual rects is slow.
+        # We will draw points or combine them.
+        # For PySide6, drawing points with a pen is fairly fast.
+        
+        # We only want to draw OCCUPIED cells (2)
+        # Maybe FREE cells (1) as a subtle background.
+        
+        painter.setPen(Qt.PenStyle.NoPen)
+        occ_brush = QBrush(QColor(255, 255, 255, 180))
+        free_brush = QBrush(QColor(0, 180, 216, 10))
+        
+        # To avoid lag, we could just draw occupied cells as small rects
+        w = grid.width
+        h = grid.height
+        res = grid.resolution
+        ox = grid.origin_x
+        oy = grid.origin_y
+        
+        # Calculate cell size on screen
+        # Usually 0.05m * scale
+        cell_size = res * self._scale
+        # But if it's too small, make it 1 pixel at least
+        screen_size = max(1.0, cell_size)
+        
+        # Gather rectangles for batch drawing
+        occ_rects = []
+        free_rects = []
+        
+        for y in range(h):
+            for x in range(w):
+                val = grid.cells[y * w + x]
+                if val == 0:
+                    continue
+                    
+                # World coordinates of cell center
+                wx = (x * res) - ox
+                wy = (y * res) - oy
+                
+                # Check if it's within current view bounds
+                if wx < self._min_x or wx > self._max_x or wy < self._min_y or wy > self._max_y:
+                    continue
+                    
+                sp = self._to_screen(wx, wy)
+                rect = QRectF(sp.x() - screen_size/2, sp.y() - screen_size/2, screen_size, screen_size)
+                
+                if val == 2:
+                    occ_rects.append(rect)
+                elif val == 1:
+                    free_rects.append(rect)
+                    
+        # Draw free space
+        if free_rects:
+            painter.setBrush(free_brush)
+            painter.drawRects(free_rects)
+            
+        # Draw obstacles
+        if occ_rects:
+            painter.setBrush(occ_brush)
+            painter.drawRects(occ_rects)
 
     def _draw_incidents(self, painter: QPainter):
         """Draws all detected incidents from Incident.location."""

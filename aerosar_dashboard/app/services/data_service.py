@@ -132,8 +132,12 @@ class DataService(QObject):
 
         # Spatial Service
         from app.spatial.provider import MockLiDARProvider
+        from app.spatial.slam_provider import MockSLAMProvider
         from app.spatial.service import SpatialService
-        self.spatial_service = SpatialService(MockLiDARProvider())
+        self.spatial_service = SpatialService(
+            provider=MockLiDARProvider(),
+            slam_provider=MockSLAMProvider()
+        )
         self.spatial_service.start()
 
         # Central update loop (500ms heartbeat)

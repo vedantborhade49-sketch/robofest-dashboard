@@ -11,7 +11,7 @@ from app.api.routes.events import router as events_router
 from app.api.routes.telemetry import router as telemetry_router
 from app.api.routes.status import router as status_router
 from app.api.routes.realtime import router as realtime_router
-from app.api.routes.spatial import router as spatial_router
+from app.api.routes.spatial import router as spatial_router, slam_router
 from app.realtime.event_bus import event_bus
 
 @asynccontextmanager
@@ -45,3 +45,4 @@ app.include_router(telemetry_router, prefix="/api/v1")
 app.include_router(status_router, prefix="/api/v1")
 app.include_router(realtime_router, prefix="/api/v1")
 app.include_router(spatial_router, prefix="/api/v1")
+app.include_router(slam_router, prefix="/api/v1")

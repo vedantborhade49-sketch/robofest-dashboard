@@ -37,10 +37,17 @@ class MockLiDARProvider(LiDARProvider):
         
         # A simple box room with a few obstacles
         self._start_time = None
+        self._last_time = None
+        
+        # Ground truth drone state
+        self.gt_x = 0.0
+        self.gt_y = 0.0
+        self.gt_yaw = 0.0
 
     def start(self) -> bool:
         self._connected = True
         self._start_time = datetime.now()
+        self._last_time = self._start_time
         return True
 
     def stop(self):
@@ -60,28 +67,44 @@ class MockLiDARProvider(LiDARProvider):
         angle_increment = (2 * math.pi) / self.num_points
         
         # Time-based dynamic obstacle movement
-        elapsed = (datetime.now() - self._start_time).total_seconds() if self._start_time else 0
+        now = datetime.now()
+        elapsed = (now - self._start_time).total_seconds() if self._start_time else 0
+        dt = (now - self._last_time).total_seconds() if self._last_time else 0.1
+        self._last_time = now
+        
         dynamic_obs_x = 5.0 + math.sin(elapsed * 0.5) * 2.0
         dynamic_obs_y = 2.0 + math.cos(elapsed * 0.3) * 1.5
         
+        # Update drone ground truth pose
+        v = 0.5
+        w = 0.1
+        self.gt_yaw += w * dt
+        self.gt_x += v * math.cos(self.gt_yaw) * dt
+        self.gt_y += v * math.sin(self.gt_yaw) * dt
+        
         for i in range(self.num_points):
             angle = i * angle_increment
+            global_angle = self.gt_yaw + angle
             
-            # Simulate walls (box from x=-10..10, y=-10..10)
-            # Ray intersection with x=10, x=-10, y=10, y=-10
-            d_x1 = 10.0 / math.cos(angle) if abs(math.cos(angle)) > 1e-6 else float('inf')
-            d_x2 = -10.0 / math.cos(angle) if abs(math.cos(angle)) > 1e-6 else float('inf')
-            d_y1 = 10.0 / math.sin(angle) if abs(math.sin(angle)) > 1e-6 else float('inf')
-            d_y2 = -10.0 / math.sin(angle) if abs(math.sin(angle)) > 1e-6 else float('inf')
+            cos_a = math.cos(global_angle)
+            sin_a = math.sin(global_angle)
             
-            d_walls = min([d for d in [d_x1, d_x2, d_y1, d_y2] if d > 0])
+            # Simulate walls (box from x=-15..15, y=-15..15)
+            # Ray intersection with x=15, x=-15, y=15, y=-15 from (gt_x, gt_y)
+            d_x1 = (15.0 - self.gt_x) / cos_a if abs(cos_a) > 1e-6 else float('inf')
+            d_x2 = (-15.0 - self.gt_x) / cos_a if abs(cos_a) > 1e-6 else float('inf')
+            d_y1 = (15.0 - self.gt_y) / sin_a if abs(sin_a) > 1e-6 else float('inf')
+            d_y2 = (-15.0 - self.gt_y) / sin_a if abs(sin_a) > 1e-6 else float('inf')
+            
+            d_walls = min([d for d in [d_x1, d_x2, d_y1, d_y2] if d > 0], default=float('inf'))
             
             # Check dynamic obstacle (circle of radius 1m)
-            # distance to obstacle center
-            dx = dynamic_obs_x
-            dy = dynamic_obs_y
+            # relative distance from drone to obstacle
+            dx = dynamic_obs_x - self.gt_x
+            dy = dynamic_obs_y - self.gt_y
             dist_to_obs = math.hypot(dx, dy)
-            angle_to_obs = math.atan2(dy, dx)
+            angle_to_obs = math.atan2(dy, dx) - self.gt_yaw
+            
             if angle_to_obs < 0:
                 angle_to_obs += 2 * math.pi
                 
@@ -91,7 +114,7 @@ class MockLiDARProvider(LiDARProvider):
                 
             d_obs = float('inf')
             # If ray hits the circle (approx angle diff)
-            if angle_diff < math.atan2(1.0, dist_to_obs):
+            if dist_to_obs > 1.0 and angle_diff < math.atan2(1.0, dist_to_obs):
                 d_obs = dist_to_obs - math.cos(angle_diff) * 1.0
             
             # Select closest hit, add noise
