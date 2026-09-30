@@ -46,8 +46,10 @@ class PerceptionWorker(QObject):
         # Convert detections to incidents and persist via DataService
         try:
             if detections:
-                incidents = self._incident_engine.process_detections(detections)
                 ds = DataService()
+                state = ds.get_state()
+                spatial_state = state.spatial if state else None
+                incidents = self._incident_engine.process_detections(detections, spatial_state)
                 for inc in incidents:
                     try:
                         ds.add_incident(inc)

@@ -25,14 +25,21 @@ def build_prompt(incident: Incident, retrieved_context: RAGResult) -> str:
     """Builds a formatted prompt from an incident and retrieved context."""
     
     # Format Incident Data
-    location_str = "Unavailable"
-    if incident.location:
-        location_str = f"X: {incident.location.x}, Y: {incident.location.y}, Z: {incident.location.z}"
+    if incident.spatial_status == "UNAVAILABLE" or not incident.location:
+        location_str = "Unavailable"
+        spatial_status = "UNAVAILABLE"
+        range_str = "N/A"
+    else:
+        location_str = f"X: {incident.location.x:.2f}, Y: {incident.location.y:.2f}, Z: {incident.location.z:.2f} ({incident.position_frame})"
+        spatial_status = incident.spatial_status
+        range_str = f"{incident.range:.2f}m" if incident.range is not None else "N/A"
     
     incident_text = f"Incident Type: {incident.type}\n"
     incident_text += f"Confidence: {incident.confidence * 100:.1f}%\n"
     incident_text += f"Timestamp: {incident.timestamp}\n"
     incident_text += f"Location: {location_str}\n"
+    incident_text += f"Range: {range_str}\n"
+    incident_text += f"Spatial Status: {spatial_status}\n"
     incident_text += f"Status: {incident.status}\n"
     
     # Format Context Data

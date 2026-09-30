@@ -14,6 +14,42 @@ class LocalPosition(BaseModel):
     y: float = 0.0
     z: float = 0.0
 
+class SpatialTarget(BaseModel):
+    """
+    Target position in a specific coordinate frame.
+    """
+    target_id: str
+    frame_id: str
+    x: float
+    y: float
+    z: float
+    range: float
+    timestamp: datetime = Field(default_factory=datetime.now)
+    position_confidence: float = 0.0
+    source: str = "LiDAR+Camera"
+
+class CameraGeometry(BaseModel):
+    """
+    Abstraction for camera intrinsics and resolution.
+    """
+    image_width: int = 1280
+    image_height: int = 720
+    fx: float = 640.0
+    fy: float = 640.0
+    cx: float = 640.0
+    cy: float = 360.0
+
+class DetectionGeometry(BaseModel):
+    """
+    Structured representation of detection geometry.
+    """
+    center_x: float
+    center_y: float
+    width: float
+    height: float
+    bottom_center_x: float
+    bottom_center_y: float
+
 class Pose(BaseModel):
     """
     Vehicle pose in a given coordinate frame.

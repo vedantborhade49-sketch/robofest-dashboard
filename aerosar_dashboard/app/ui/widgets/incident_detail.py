@@ -258,9 +258,9 @@ class IncidentDetail(QFrame):
         loc_top.addWidget(loc_title)
         loc_top.addStretch()
 
-        frame_tag = QLabel("COORDINATE FRAME: LOCAL / SLAM")
-        frame_tag.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-weight: 600; font-family: monospace;")
-        loc_top.addWidget(frame_tag)
+        self.frame_tag = QLabel("COORDINATE FRAME: --")
+        self.frame_tag.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-weight: 600; font-family: monospace;")
+        loc_top.addWidget(self.frame_tag)
         loc_layout.addLayout(loc_top)
 
         # Coordinates line
@@ -270,14 +270,15 @@ class IncidentDetail(QFrame):
         self.lbl_x = QLabel("X: --")
         self.lbl_y = QLabel("Y: --")
         self.lbl_z = QLabel("Z: --")
-        for lbl in (self.lbl_x, self.lbl_y, self.lbl_z):
+        self.lbl_range = QLabel("R: --")
+        for lbl in (self.lbl_x, self.lbl_y, self.lbl_z, self.lbl_range):
             lbl.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; font-family: monospace;")
             coords_layout.addWidget(lbl)
         coords_layout.addStretch()
 
-        loc_note = QLabel("Derived from LiDAR + SLAM sensor fusion (mock)")
-        loc_note.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-style: italic;")
-        coords_layout.addWidget(loc_note)
+        self.loc_note = QLabel("Derived from LiDAR + SLAM sensor fusion (mock)")
+        self.loc_note.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-style: italic;")
+        coords_layout.addWidget(self.loc_note)
 
         loc_layout.addLayout(coords_layout)
         self.content_layout.addWidget(loc_box)
@@ -456,9 +457,23 @@ class IncidentDetail(QFrame):
         self.val_mission.setText(incident.mission_id)
 
         # Location
-        self.lbl_x.setText(f"X: {incident.location.x:.1f} m")
-        self.lbl_y.setText(f"Y: {incident.location.y:.1f} m")
-        self.lbl_z.setText(f"Z: {incident.location.z:.1f} m")
+        if incident.spatial_status == "UNAVAILABLE" or incident.location is None:
+            self.lbl_x.setText("X: --")
+            self.lbl_y.setText("Y: --")
+            self.lbl_z.setText("Z: --")
+            self.lbl_range.setText("R: --")
+            self.frame_tag.setText("COORDINATE FRAME: UNAVAILABLE")
+            self.loc_note.setText("Spatial localization failed or unavailable.")
+        else:
+            self.lbl_x.setText(f"X: {incident.location.x:.1f} m")
+            self.lbl_y.setText(f"Y: {incident.location.y:.1f} m")
+            self.lbl_z.setText(f"Z: {incident.location.z:.1f} m")
+            rng = f"{incident.range:.1f}" if incident.range is not None else "--"
+            self.lbl_range.setText(f"R: {rng} m")
+            frame = (incident.position_frame or "UNKNOWN").upper()
+            conf = f"{int(incident.spatial_confidence * 100)}%" if incident.spatial_confidence is not None else "N/A"
+            self.frame_tag.setText(f"FRAME: {frame} | STATUS: {incident.spatial_status}")
+            self.loc_note.setText(f"Confidence: {conf} | Source: {incident.source_sensor or 'LiDAR'}")
 
         # Evidence labels & viewport
         ev_id = incident.evidence_image or f"EV-{incident.incident_id}.jpg"

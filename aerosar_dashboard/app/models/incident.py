@@ -49,6 +49,11 @@ class Incident(BaseModel):
     timestamp: datetime
     bbox: Optional[BoundingBox] = None
     location: Optional[Location] = None
+    spatial_status: str = "UNAVAILABLE" # UNKNOWN, ESTIMATED, CONFIRMED, UNAVAILABLE
+    position_frame: Optional[str] = None
+    range: Optional[float] = None
+    spatial_confidence: Optional[float] = None
+    source_sensor: Optional[str] = None
     evidence_id: Optional[str] = None
     evidence_image: Optional[str] = None
     status: IncidentStatus | str = IncidentStatus.NEW  # NEW | REVIEW | CONFIRMED | RESOLVED | DISMISSED

@@ -57,6 +57,12 @@ class IncidentCreateRequest(BaseModel):
     location: LocationRequest
     evidence_image: Optional[str] = None
     status: str = "NEW"
+    
+    spatial_status: str = "UNAVAILABLE"
+    position_frame: Optional[str] = None
+    range: Optional[float] = None
+    spatial_confidence: Optional[float] = None
+    source_sensor: Optional[str] = None
 
     def to_incident(self) -> Incident:
         bbox = None
@@ -73,6 +79,11 @@ class IncidentCreateRequest(BaseModel):
             location=Location(**self.location.model_dump()),
             evidence_image=self.evidence_image,
             status=self.status,
+            spatial_status=self.spatial_status,
+            position_frame=self.position_frame,
+            range=self.range,
+            spatial_confidence=self.spatial_confidence,
+            source_sensor=self.source_sensor,
         )
 
 
@@ -85,6 +96,11 @@ class IncidentPatchRequest(BaseModel):
     location: Optional[LocationRequest] = None
     evidence_image: Optional[str] = None
     status: Optional[str] = None
+    spatial_status: Optional[str] = None
+    position_frame: Optional[str] = None
+    range: Optional[float] = None
+    spatial_confidence: Optional[float] = None
+    source_sensor: Optional[str] = None
 
 
 class IncidentStatusUpdateRequest(BaseModel):
@@ -109,6 +125,11 @@ class IncidentResponse(BaseModel):
     location: LocationRequest
     evidence_image: Optional[str] = None
     status: str = "NEW"
+    spatial_status: str = "UNAVAILABLE"
+    position_frame: Optional[str] = None
+    range: Optional[float] = None
+    spatial_confidence: Optional[float] = None
+    source_sensor: Optional[str] = None
 
     @classmethod
     def model_validate(cls, data: Any):

@@ -93,6 +93,17 @@ class Repository:
                 db_incident.location_x = incident.location.x
                 db_incident.location_y = incident.location.y
                 db_incident.location_z = incident.location.z
+            else:
+                db_incident.location_x = None
+                db_incident.location_y = None
+                db_incident.location_z = None
+                
+            db_incident.spatial_status = incident.spatial_status
+            db_incident.position_frame = incident.position_frame
+            db_incident.range = incident.range
+            db_incident.spatial_confidence = incident.spatial_confidence
+            db_incident.source_sensor = incident.source_sensor
+            
             db_incident.evidence_id = getattr(incident, "evidence_id", None)
             db_incident.evidence_image = incident.evidence_image
             status_val = getattr(incident.status, "value", incident.status)
@@ -116,6 +127,11 @@ class Repository:
                 bbox = None
                 if m.bbox_x is not None:
                     bbox = BoundingBox(x=m.bbox_x, y=m.bbox_y, width=m.bbox_width, height=m.bbox_height)
+                    
+                location = None
+                if m.location_x is not None:
+                    location = Location(x=m.location_x, y=m.location_y, z=m.location_z)
+                    
                 inc = Incident(
                     incident_id=m.incident_id,
                     mission_id=m.mission_id,
@@ -123,7 +139,12 @@ class Repository:
                     confidence=m.confidence,
                     timestamp=m.timestamp,
                     bbox=bbox,
-                    location=Location(x=m.location_x, y=m.location_y, z=m.location_z),
+                    location=location,
+                    spatial_status=m.spatial_status,
+                    position_frame=m.position_frame,
+                    range=m.range,
+                    spatial_confidence=m.spatial_confidence,
+                    source_sensor=m.source_sensor,
                     evidence_id=getattr(m, "evidence_id", None),
                     evidence_image=m.evidence_image,
                     status=m.status

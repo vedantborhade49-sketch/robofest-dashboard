@@ -6,6 +6,7 @@ import uuid
 
 from app.models.detection import Detection, BoundingBox
 from app.models.incident import Incident, Location
+from app.models.spatial import SpatialState
 from app.models.settings import DashboardSettings
 
 
@@ -76,7 +77,7 @@ class IncidentEngine:
             return "PERSON_DETECTED"
         return "UNKNOWN_HAZARD"
 
-    def process_detection(self, det: Detection) -> Optional[Incident]:
+    def process_detection(self, det: Detection, spatial_state: Optional[SpatialState] = None) -> Optional[Incident]:
         # validate
         if not det or det.confidence is None:
             return None
@@ -101,8 +102,43 @@ class IncidentEngine:
         # create incident
         incident_id = self._generate_incident_id()
         bbox = det.bbox
-        # location unknown for V1 -> zeros
-        location = Location(x=0.0, y=0.0, z=0.0)
+        
+        location = None
+        spatial_status = "UNAVAILABLE"
+        pos_frame = None
+        rng = None
+        s_conf = None
+        src_sensor = None
+        
+        if spatial_state:
+            from app.spatial.locator import SpatialLocator
+            locator = SpatialLocator()
+            
+            center_x, center_y = self._detection_center(bbox)
+            if bbox.x1 is not None and bbox.x2 is not None and bbox.y2 is not None:
+                bottom_x = (bbox.x1 + bbox.x2) / 2.0
+                bottom_y = float(bbox.y2)
+            else:
+                bottom_x = center_x
+                bottom_y = center_y
+                
+            base_target, map_target = locator.locate_target(incident_id, bottom_x, bottom_y, spatial_state)
+            
+            if map_target:
+                location = Location(x=map_target.x, y=map_target.y, z=map_target.z)
+                spatial_status = "ESTIMATED"
+                pos_frame = map_target.frame_id
+                rng = map_target.range
+                s_conf = map_target.position_confidence
+                src_sensor = map_target.source
+            elif base_target:
+                location = Location(x=base_target.x, y=base_target.y, z=base_target.z)
+                spatial_status = "ESTIMATED"
+                pos_frame = base_target.frame_id
+                rng = base_target.range
+                s_conf = base_target.position_confidence
+                src_sensor = base_target.source
+
         inc = Incident(
             incident_id=incident_id,
             mission_id=getattr(det, "mission_id", "SAR-001"),
@@ -111,6 +147,11 @@ class IncidentEngine:
             timestamp=det.timestamp,
             bbox=bbox,
             location=location,
+            spatial_status=spatial_status,
+            position_frame=pos_frame,
+            range=rng,
+            spatial_confidence=s_conf,
+            source_sensor=src_sensor,
             evidence_image=getattr(det, "evidence_image", None),
             status="NEW",
         )
@@ -120,10 +161,10 @@ class IncidentEngine:
         self._active.append((incident_id, inc_type, center, det.timestamp))
         return inc
 
-    def process_detections(self, detections: List[Detection]) -> List[Incident]:
+    def process_detections(self, detections: List[Detection], spatial_state: Optional[SpatialState] = None) -> List[Incident]:
         created: List[Incident] = []
         for det in detections or []:
-            inc = self.process_detection(det)
+            inc = self.process_detection(det, spatial_state)
             if inc:
                 created.append(inc)
         return created

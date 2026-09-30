@@ -31,9 +31,15 @@ class IncidentModel(Base):
     bbox_height: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     
     # Location
-    location_x: Mapped[float] = mapped_column(Float)
-    location_y: Mapped[float] = mapped_column(Float)
-    location_z: Mapped[float] = mapped_column(Float)
+    location_x: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    location_y: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    location_z: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    spatial_status: Mapped[str] = mapped_column(String, default="UNAVAILABLE")
+    position_frame: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    range: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    spatial_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    source_sensor: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     evidence_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     evidence_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
