@@ -49,3 +49,6 @@ app.include_router(slam_router, prefix="/api/v1")
 
 from app.api.routes.onboard import router as onboard_router
 app.include_router(onboard_router, prefix="/api/v1/onboard")
+
+from app.api.routes.uav import router as uav_router
+app.include_router(uav_router, prefix="/api/v1/uav", tags=["uav"])
