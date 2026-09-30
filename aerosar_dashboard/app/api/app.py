@@ -46,3 +46,6 @@ app.include_router(status_router, prefix="/api/v1")
 app.include_router(realtime_router, prefix="/api/v1")
 app.include_router(spatial_router, prefix="/api/v1")
 app.include_router(slam_router, prefix="/api/v1")
+
+from app.api.routes.onboard import router as onboard_router
+app.include_router(onboard_router, prefix="/api/v1/onboard")

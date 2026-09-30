@@ -17,6 +17,8 @@ class EventType(str, Enum):
     SPATIAL_UPDATE = "SPATIAL_UPDATE"
     TELEMETRY_UPDATE = "TELEMETRY_UPDATE"
     REPORT_GENERATED = "REPORT_GENERATED"
+    ONBOARD_HEALTH = "ONBOARD_HEALTH"
+    ONBOARD_STATUS_UPDATE = "ONBOARD_STATUS_UPDATE"
 
 class RealTimeEvent(BaseModel):
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
