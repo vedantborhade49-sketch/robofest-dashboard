@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSplitter
 from PySide6.QtCore import Qt, QTimer, QThread
 from app.services.data_service import DataService
 from app.ui.widgets.live_feed_panels import (
@@ -6,48 +6,69 @@ from app.ui.widgets.live_feed_panels import (
 )
 from app.perception.qt_worker import PerceptionWorker
 from app.perception.camera import OpenCVVideoSource
+from app.ui.responsive import ScreenSize
 
 
 class LiveFeedView(QWidget):
     def __init__(self):
         super().__init__()
         self.data_service = DataService()
+        self.current_state = None
         self._setup_ui()
         self._start_live_updates()
         self._start_perception_worker()
 
     def _setup_ui(self):
-        self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(24, 24, 24, 24)
-        self.layout.setSpacing(16)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(24, 24, 24, 24)
+        self.main_layout.setSpacing(16)
 
-        # Left Side (Camera + Status Bar) - Takes ~70% width
-        left_layout = QVBoxLayout()
-        left_layout.setSpacing(12)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setStyleSheet("QSplitter::handle { background-color: transparent; }")
+
+        # Left Side (Camera + Status Bar)
+        self.left_widget = QWidget()
+        self.left_layout = QVBoxLayout(self.left_widget)
+        self.left_layout.setContentsMargins(0, 0, 0, 0)
+        self.left_layout.setSpacing(12)
 
         self.camera_panel = CameraPanel()
         self.camera_status = CameraStatusBar()
 
-        left_layout.addWidget(self.camera_panel, 1)  # Camera expands
-        left_layout.addWidget(self.camera_status)
+        self.left_layout.addWidget(self.camera_panel, 1)
+        self.left_layout.addWidget(self.camera_status)
 
-        left_widget = QWidget()
-        left_widget.setLayout(left_layout)
-        self.layout.addWidget(left_widget, 7)
-
-        # Right Side (AI Panel + Detections) - Takes ~30% width
-        right_layout = QVBoxLayout()
-        right_layout.setSpacing(16)
+        # Right Side (AI Panel + Detections)
+        self.right_widget = QWidget()
+        self.right_layout = QVBoxLayout(self.right_widget)
+        self.right_layout.setContentsMargins(0, 0, 0, 0)
+        self.right_layout.setSpacing(16)
 
         self.ai_panel = AIPerceptionPanel()
         self.detections_panel = DetectionListPanel()
 
-        right_layout.addWidget(self.ai_panel)
-        right_layout.addWidget(self.detections_panel, 1)  # List expands
+        self.right_layout.addWidget(self.ai_panel)
+        self.right_layout.addWidget(self.detections_panel, 1)
 
-        right_widget = QWidget()
-        right_widget.setLayout(right_layout)
-        self.layout.addWidget(right_widget, 3)
+        self.splitter.addWidget(self.left_widget)
+        self.splitter.addWidget(self.right_widget)
+        
+        # Default proportions
+        self.splitter.setStretchFactor(0, 7)
+        self.splitter.setStretchFactor(1, 3)
+
+        self.main_layout.addWidget(self.splitter)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            self.splitter.setOrientation(Qt.Orientation.Vertical)
+        else:
+            self.splitter.setOrientation(Qt.Orientation.Horizontal)
+            self.splitter.setSizes([int(self.width() * 0.7), int(self.width() * 0.3)])
 
     def _start_live_updates(self):
         # Initial display from central state

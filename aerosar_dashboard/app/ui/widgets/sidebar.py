@@ -1,39 +1,69 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
 from app.ui.theme import Theme
+from app.ui.responsive import ScreenSize
 
 class SidebarButton(QPushButton):
-    def __init__(self, text: str, page_index: int):
-        super().__init__(text)
+    def __init__(self, text: str, icon_text: str, page_index: int):
+        super().__init__()
         self.page_index = page_index
+        self.full_text = text
+        self.icon_text = icon_text
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip(text)
         
-        # Style definition
-        self.setStyleSheet(f"""
-            QPushButton {{
-                text-align: left;
-                padding: 12px 16px;
-                background-color: transparent;
-                color: {Theme.TEXT_SECONDARY};
-                border: none;
-                border-left: 3px solid transparent;
-                font-size: 14px;
-                font-weight: 500;
-            }}
-            QPushButton:hover {{
-                background-color: {Theme.BG_PANEL};
-                color: {Theme.TEXT_PRIMARY};
-            }}
-            QPushButton:checked {{
-                background-color: {Theme.BG_PANEL};
-                color: {Theme.ACCENT};
-                border-left: 3px solid {Theme.ACCENT};
-            }}
-        """)
+        self.set_compact(False)
+        
+    def set_compact(self, compact: bool):
+        if compact:
+            self.setText(self.icon_text)
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    text-align: center;
+                    padding: 12px 0px;
+                    font-size: 18px;
+                    background-color: transparent;
+                    color: {Theme.TEXT_SECONDARY};
+                    border: none;
+                    border-left: 3px solid transparent;
+                }}
+                QPushButton:hover {{
+                    background-color: {Theme.SURFACE_ELEVATED};
+                    color: {Theme.TEXT_PRIMARY};
+                }}
+                QPushButton:checked {{
+                    background-color: {Theme.SURFACE_ELEVATED};
+                    color: {Theme.ACCENT};
+                    border-left: 3px solid {Theme.ACCENT};
+                }}
+            """)
+        else:
+            self.setText(f"{self.icon_text}   {self.full_text}")
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    text-align: left;
+                    padding: 12px 0px 12px 20px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    background-color: transparent;
+                    color: {Theme.TEXT_SECONDARY};
+                    border: none;
+                    border-left: 3px solid transparent;
+                }}
+                QPushButton:hover {{
+                    background-color: {Theme.SURFACE_ELEVATED};
+                    color: {Theme.TEXT_PRIMARY};
+                }}
+                QPushButton:checked {{
+                    background-color: {Theme.SURFACE_ELEVATED};
+                    color: {Theme.ACCENT};
+                    border-left: 3px solid {Theme.ACCENT};
+                }}
+            """)
 
 class Sidebar(QWidget):
     page_selected = Signal(int, str) # Emits (page_index, page_name)
@@ -45,7 +75,7 @@ class Sidebar(QWidget):
         # Enforce styling for the sidebar container
         self.setStyleSheet(f"""
             Sidebar {{
-                background-color: {Theme.BG_SECONDARY};
+                background-color: {Theme.SURFACE};
                 border-right: 1px solid {Theme.BORDER};
             }}
         """)
@@ -59,36 +89,36 @@ class Sidebar(QWidget):
         layout.setSpacing(0)
         
         # Branding Header
-        branding_container = QWidget()
-        branding_layout = QVBoxLayout(branding_container)
+        self.branding_container = QWidget()
+        branding_layout = QVBoxLayout(self.branding_container)
         branding_layout.setContentsMargins(20, 24, 20, 24)
         branding_layout.setSpacing(4)
         
-        title = QLabel("AEROSAR")
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: bold; letter-spacing: 2px;")
+        self.title = QLabel("AEROSAR")
+        self.title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: bold; letter-spacing: 2px;")
         
-        subtitle = QLabel("GROUND STATION")
-        subtitle.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: 600; letter-spacing: 1px;")
+        self.subtitle = QLabel("GROUND STATION")
+        self.subtitle.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: 600; letter-spacing: 1px;")
         
-        branding_layout.addWidget(title)
-        branding_layout.addWidget(subtitle)
+        branding_layout.addWidget(self.title)
+        branding_layout.addWidget(self.subtitle)
         
-        layout.addWidget(branding_container)
+        layout.addWidget(self.branding_container)
         
         # Navigation Items
         nav_items = [
-            "Overview",
-            "Live Feed",
-            "Incidents",
-            "Map",
-            "Telemetry",
-            "Reports",
-            "Event Log",
-            "Settings"
+            ("Overview", "◉"),
+            ("Live Feed", "◫"),
+            ("Incidents", "⚠"),
+            ("Map", "🗺"),
+            ("Telemetry", "≋"),
+            ("Reports", "▤"),
+            ("Event Log", "≡"),
+            ("Settings", "⚙")
         ]
         
-        for idx, name in enumerate(nav_items):
-            btn = SidebarButton(name, idx)
+        for idx, (name, icon) in enumerate(nav_items):
+            btn = SidebarButton(name, icon, idx)
             btn.clicked.connect(lambda checked, i=idx, n=name: self._on_button_clicked(i, n))
             self.buttons.append(btn)
             layout.addWidget(btn)
@@ -96,24 +126,21 @@ class Sidebar(QWidget):
         layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         
         # Footer - System Status
-        footer_container = QWidget()
-        footer_container.setStyleSheet(f"border-top: 1px solid {Theme.BORDER}; background-color: transparent;")
-        footer_layout = QVBoxLayout(footer_container)
+        self.footer_container = QWidget()
+        self.footer_container.setStyleSheet(f"border-top: 1px solid {Theme.BORDER}; background-color: transparent;")
+        footer_layout = QVBoxLayout(self.footer_container)
         footer_layout.setContentsMargins(20, 20, 20, 20)
         
-        system_label = QLabel("SYSTEM")
-        system_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: none;")
+        self.system_label = QLabel("SYSTEM")
+        self.system_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: none;")
         
-        status_layout = QVBoxLayout()
-        status_layout.setSpacing(4)
+        self.status_indicator = QLabel("● ONLINE")
+        self.status_indicator.setStyleSheet(f"color: {Theme.SUCCESS}; font-size: 13px; font-weight: 600; border: none;")
         
-        status_indicator = QLabel("● ONLINE")
-        status_indicator.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 13px; font-weight: 600; border: none;")
+        footer_layout.addWidget(self.system_label)
+        footer_layout.addWidget(self.status_indicator)
         
-        footer_layout.addWidget(system_label)
-        footer_layout.addWidget(status_indicator)
-        
-        layout.addWidget(footer_container)
+        layout.addWidget(self.footer_container)
         
     def _on_button_clicked(self, page_index: int, page_name: str):
         self.set_active_page(page_index)
@@ -125,3 +152,33 @@ class Sidebar(QWidget):
                 btn.setChecked(True)
             else:
                 btn.setChecked(False)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            self.setFixedWidth(64)
+            self.title.setText("A")
+            self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.subtitle.hide()
+            self.branding_container.layout().setContentsMargins(0, 24, 0, 24)
+            
+            for btn in self.buttons:
+                btn.set_compact(True)
+                
+            self.system_label.hide()
+            self.status_indicator.setText("●")
+            self.status_indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.footer_container.layout().setContentsMargins(0, 20, 0, 20)
+        else:
+            self.setFixedWidth(240)
+            self.title.setText("AEROSAR")
+            self.title.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            self.subtitle.show()
+            self.branding_container.layout().setContentsMargins(20, 24, 20, 24)
+            
+            for btn in self.buttons:
+                btn.set_compact(False)
+                
+            self.system_label.show()
+            self.status_indicator.setText("● ONLINE")
+            self.status_indicator.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            self.footer_container.layout().setContentsMargins(20, 20, 20, 20)

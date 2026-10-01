@@ -1,7 +1,7 @@
 from typing import List, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton,
-    QLineEdit, QComboBox, QSplitter
+    QLineEdit, QComboBox, QSplitter, QGridLayout
 )
 from PySide6.QtCore import Qt, QTimer, Signal
 from app.ui.theme import Theme
@@ -9,6 +9,7 @@ from app.services.data_service import DataService
 from app.models.event import Event
 from app.ui.widgets.event_table import EventTableWidget
 from app.ui.widgets.event_detail_panel import EventDetailPanel
+from app.ui.responsive import ScreenSize
 
 class EventCountersBar(QFrame):
     """
@@ -20,41 +21,43 @@ class EventCountersBar(QFrame):
         self.setFixedHeight(54)
         self.setStyleSheet(f"""
             EventCountersBar {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 6px;
             }}
         """)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 0, 20, 0)
-        layout.setSpacing(14)
+        self.main_layout = QHBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 0, 20, 0)
+        self.main_layout.setSpacing(14)
 
         # Title & Subtitle
-        title_box = QVBoxLayout()
-        title_box.setSpacing(2)
-        title_box.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        self.title_box = QWidget()
+        title_l = QVBoxLayout(self.title_box)
+        title_l.setSpacing(2)
+        title_l.setContentsMargins(0, 0, 0, 0)
+        title_l.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        title = QLabel("EVENT LOG / MISSION TIMELINE")
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; letter-spacing: 0.8px;")
-        title_box.addWidget(title)
+        self.title = QLabel("EVENT LOG / MISSION TIMELINE")
+        self.title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; letter-spacing: 0.8px;")
+        title_l.addWidget(self.title)
 
-        sub = QLabel("CHRONOLOGICAL SUBSYSTEM JOURNAL & OPERATIONAL AUDIT")
-        sub.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 9px; font-weight: 600; letter-spacing: 0.5px;")
-        title_box.addWidget(sub)
+        self.sub = QLabel("CHRONOLOGICAL SUBSYSTEM JOURNAL & OPERATIONAL AUDIT")
+        self.sub.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 9px; font-weight: 600; letter-spacing: 0.5px;")
+        title_l.addWidget(self.sub)
 
-        layout.addLayout(title_box)
-        layout.addStretch(1)
+        self.main_layout.addWidget(self.title_box)
+        self.main_layout.addStretch(1)
 
         # Counters: TOTAL | INFO | WARNING | ERROR | SUCCESS
-        self.val_total = self._add_counter_item(layout, "TOTAL EVENTS", "0", Theme.TEXT_PRIMARY)
-        self._add_v_separator(layout)
-        self.val_info = self._add_counter_item(layout, "INFO", "0", Theme.ACCENT)
-        self._add_v_separator(layout)
-        self.val_warning = self._add_counter_item(layout, "WARNING", "0", Theme.STATUS_WARNING)
-        self._add_v_separator(layout)
-        self.val_error = self._add_counter_item(layout, "ERROR", "0", Theme.STATUS_CRITICAL)
-        self._add_v_separator(layout)
-        self.val_success = self._add_counter_item(layout, "SUCCESS", "0", Theme.STATUS_SUCCESS)
+        self.val_total = self._add_counter_item(self.main_layout, "TOTAL EVENTS", "0", Theme.TEXT_PRIMARY)
+        self.sep1 = self._add_v_separator(self.main_layout)
+        self.val_info = self._add_counter_item(self.main_layout, "INFO", "0", Theme.ACCENT)
+        self.sep2 = self._add_v_separator(self.main_layout)
+        self.val_warning = self._add_counter_item(self.main_layout, "WARNING", "0", Theme.WARNING)
+        self.sep3 = self._add_v_separator(self.main_layout)
+        self.val_error = self._add_counter_item(self.main_layout, "ERROR", "0", Theme.DANGER)
+        self.sep4 = self._add_v_separator(self.main_layout)
+        self.val_success = self._add_counter_item(self.main_layout, "SUCCESS", "0", Theme.SUCCESS)
 
     def _add_counter_item(self, layout: QHBoxLayout, label: str, init_val: str, color: str) -> QLabel:
         box = QWidget()
@@ -82,6 +85,7 @@ class EventCountersBar(QFrame):
         sep.setStyleSheet(f"border: none; border-left: 1px solid {Theme.BORDER};")
         sep.setFixedHeight(26)
         layout.addWidget(sep)
+        return sep
 
     def update_counts(self, events: List[Event]):
         total = len(events)
@@ -95,6 +99,14 @@ class EventCountersBar(QFrame):
         self.val_warning.setText(str(warn_c))
         self.val_error.setText(str(err_c))
         self.val_success.setText(str(succ_c))
+
+    def set_responsive_state(self, state: ScreenSize):
+        if state == ScreenSize.MINIMUM:
+            self.title_box.hide()
+            self.main_layout.setContentsMargins(4, 0, 4, 0)
+        else:
+            self.title_box.show()
+            self.main_layout.setContentsMargins(20, 0, 20, 0)
 
 
 class EventLogView(QWidget):
@@ -115,32 +127,33 @@ class EventLogView(QWidget):
         self.active_level_filter: str = "ALL"
         self.active_source_filter: str = "ALL SOURCES"
         self.active_search_query: str = ""
+        self.current_state = None
         self._setup_ui()
         self._init_data()
         self._start_live_updates()
 
     def _setup_ui(self):
-        root_layout = QVBoxLayout(self)
-        root_layout.setContentsMargins(24, 20, 24, 20)
-        root_layout.setSpacing(12)
+        self.root_layout = QVBoxLayout(self)
+        self.root_layout.setContentsMargins(24, 20, 24, 20)
+        self.root_layout.setSpacing(12)
 
         # 1. Top Metrics Counters Bar
         self.counters_bar = EventCountersBar()
-        root_layout.addWidget(self.counters_bar)
+        self.root_layout.addWidget(self.counters_bar)
 
         # 2. Filters & Search Control Bar
-        filter_card = QFrame()
-        filter_card.setFixedHeight(48)
-        filter_card.setStyleSheet(f"""
+        self.filter_card = QFrame()
+        self.filter_card.setFixedHeight(48)
+        self.filter_card.setStyleSheet(f"""
             QFrame {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 6px;
             }}
         """)
-        fc_layout = QHBoxLayout(filter_card)
-        fc_layout.setContentsMargins(12, 6, 12, 6)
-        fc_layout.setSpacing(8)
+        self.fc_layout = QHBoxLayout(self.filter_card)
+        self.fc_layout.setContentsMargins(12, 6, 12, 6)
+        self.fc_layout.setSpacing(8)
 
         # Level filter buttons: ALL | INFO | WARNING | ERROR | SUCCESS
         self.level_buttons = {}
@@ -150,18 +163,18 @@ class EventLogView(QWidget):
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFixedHeight(28)
             btn.clicked.connect(lambda checked, l=lvl: self._on_level_filter_changed(l))
-            fc_layout.addWidget(btn)
+            self.fc_layout.addWidget(btn)
             self.level_buttons[lvl] = btn
 
         self.level_buttons["ALL"].setChecked(True)
         self._update_level_button_styles()
 
         # Vertical separator
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet(f"border: none; border-left: 1px solid {Theme.BORDER};")
-        sep.setFixedHeight(24)
-        fc_layout.addWidget(sep)
+        self.filter_sep = QFrame()
+        self.filter_sep.setFrameShape(QFrame.Shape.VLine)
+        self.filter_sep.setStyleSheet(f"border: none; border-left: 1px solid {Theme.BORDER};")
+        self.filter_sep.setFixedHeight(24)
+        self.fc_layout.addWidget(self.filter_sep)
 
         # Source filter combo
         self.source_combo = QComboBox()
@@ -174,7 +187,7 @@ class EventLogView(QWidget):
         self.source_combo.addItems(sources)
         self.source_combo.setStyleSheet(f"""
             QComboBox {{
-                background-color: {Theme.BG_SECONDARY};
+                background-color: {Theme.SURFACE};
                 color: {Theme.TEXT_PRIMARY};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 4px;
@@ -187,7 +200,7 @@ class EventLogView(QWidget):
                 width: 18px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 color: {Theme.TEXT_PRIMARY};
                 border: 1px solid {Theme.BORDER};
                 selection-background-color: {Theme.ACCENT};
@@ -195,15 +208,15 @@ class EventLogView(QWidget):
             }}
         """)
         self.source_combo.currentTextChanged.connect(self._on_source_filter_changed)
-        fc_layout.addWidget(self.source_combo)
+        self.fc_layout.addWidget(self.source_combo)
 
         # Search field
         self.search_input = QLineEdit()
         self.search_input.setFixedHeight(28)
-        self.search_input.setPlaceholderText("🔍  Search events (message, source, incident, mission)...")
+        self.search_input.setPlaceholderText("🔍  Search events...")
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
-                background-color: {Theme.BG_SECONDARY};
+                background-color: {Theme.SURFACE};
                 color: {Theme.TEXT_PRIMARY};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 4px;
@@ -215,7 +228,7 @@ class EventLogView(QWidget):
             }}
         """)
         self.search_input.textChanged.connect(self._on_search_text_changed)
-        fc_layout.addWidget(self.search_input, 1)
+        self.fc_layout.addWidget(self.search_input, 1)
 
         # Clear Filters Button
         self.btn_clear = QPushButton("CLEAR FILTERS")
@@ -232,12 +245,12 @@ class EventLogView(QWidget):
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {Theme.BG_SECONDARY};
+                background-color: {Theme.SURFACE};
                 color: {Theme.TEXT_PRIMARY};
             }}
         """)
         self.btn_clear.clicked.connect(self._on_clear_filters)
-        fc_layout.addWidget(self.btn_clear)
+        self.fc_layout.addWidget(self.btn_clear)
 
         # Refresh Button
         self.btn_refresh = QPushButton("REFRESH")
@@ -245,7 +258,7 @@ class EventLogView(QWidget):
         self.btn_refresh.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_refresh.setStyleSheet(f"""
             QPushButton {{
-                background-color: {Theme.BG_SECONDARY};
+                background-color: {Theme.SURFACE};
                 color: {Theme.ACCENT};
                 border: 1px solid {Theme.ACCENT};
                 border-radius: 4px;
@@ -258,13 +271,13 @@ class EventLogView(QWidget):
             }}
         """)
         self.btn_refresh.clicked.connect(self._poll_data)
-        fc_layout.addWidget(self.btn_refresh)
+        self.fc_layout.addWidget(self.btn_refresh)
 
-        root_layout.addWidget(filter_card)
+        self.root_layout.addWidget(self.filter_card)
 
         # 3. Main Area: Splitter containing Event Table (top) and Event Detail Panel (bottom)
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        splitter.setStyleSheet("""
+        self.splitter = QSplitter(Qt.Orientation.Vertical)
+        self.splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: transparent;
                 height: 8px;
@@ -274,25 +287,25 @@ class EventLogView(QWidget):
         # Event Table
         self.event_table = EventTableWidget()
         self.event_table.event_selected.connect(self._on_event_selected)
-        splitter.addWidget(self.event_table)
+        self.splitter.addWidget(self.event_table)
 
         # Event Detail Panel
         self.event_detail = EventDetailPanel()
         self.event_detail.view_incident_requested.connect(self._on_view_incident)
-        splitter.addWidget(self.event_detail)
+        self.splitter.addWidget(self.event_detail)
 
         # Initial splitter stretch (65% table, 35% detail)
-        splitter.setStretchFactor(0, 65)
-        splitter.setStretchFactor(1, 35)
+        self.splitter.setStretchFactor(0, 65)
+        self.splitter.setStretchFactor(1, 35)
 
-        root_layout.addWidget(splitter, 1)
+        self.root_layout.addWidget(self.splitter, 1)
 
     def _update_level_button_styles(self):
         for lvl, btn in self.level_buttons.items():
             if btn.isChecked():
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background-color: {Theme.BG_PANEL};
+                        background-color: {Theme.SURFACE};
                         color: {Theme.ACCENT};
                         border: 1px solid {Theme.ACCENT};
                         border-radius: 4px;
@@ -313,10 +326,36 @@ class EventLogView(QWidget):
                         padding: 2px 10px;
                     }}
                     QPushButton:hover {{
-                        background-color: {Theme.BG_SECONDARY};
+                        background-color: {Theme.SURFACE};
                         color: {Theme.TEXT_PRIMARY};
                     }}
                 """)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        self.counters_bar.set_responsive_state(state)
+        
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            self.root_layout.setContentsMargins(8, 8, 8, 8)
+            # hide standard level buttons in minimum width to save space
+            if state == ScreenSize.MINIMUM:
+                for lvl, btn in self.level_buttons.items():
+                    btn.hide()
+                self.filter_sep.hide()
+                self.btn_clear.hide()
+            else:
+                for lvl, btn in self.level_buttons.items():
+                    btn.show()
+                self.filter_sep.show()
+                self.btn_clear.show()
+        else:
+            self.root_layout.setContentsMargins(24, 20, 24, 20)
+            for lvl, btn in self.level_buttons.items():
+                btn.show()
+            self.filter_sep.show()
+            self.btn_clear.show()
 
     def _init_data(self):
         self.all_events = self.data_service.get_events()

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QSplitter
 )
 from PySide6.QtCore import Qt, QTimer, Signal
 from app.ui.theme import Theme
@@ -8,6 +8,7 @@ from app.services.data_service import DataService
 from app.models.incident import Incident
 from app.ui.widgets.incident_list import IncidentList
 from app.ui.widgets.incident_detail import IncidentDetail
+from app.ui.responsive import ScreenSize
 
 class IncidentCountersBar(QFrame):
     """
@@ -19,7 +20,7 @@ class IncidentCountersBar(QFrame):
         self.setFixedHeight(74)
         self.setStyleSheet(f"""
             IncidentCountersBar {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 6px;
             }}
@@ -29,32 +30,34 @@ class IncidentCountersBar(QFrame):
         self.main_layout.setSpacing(16)
 
         # Title & Active summary on left
-        title_box = QWidget()
-        tb_layout = QVBoxLayout(title_box)
+        self.title_box = QWidget()
+        tb_layout = QVBoxLayout(self.title_box)
         tb_layout.setContentsMargins(0, 0, 0, 0)
         tb_layout.setSpacing(2)
 
-        page_title = QLabel("INCIDENTS")
-        page_title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 15px; font-weight: bold; letter-spacing: 0.8px;")
-        tb_layout.addWidget(page_title)
+        self.page_title = QLabel("INCIDENTS")
+        self.page_title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 15px; font-weight: bold; letter-spacing: 0.8px;")
+        tb_layout.addWidget(self.page_title)
 
         self.active_sub_lbl = QLabel("0 ACTIVE")
         self.active_sub_lbl.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 11px; font-weight: bold; font-family: monospace;")
         tb_layout.addWidget(self.active_sub_lbl)
 
-        self.main_layout.addWidget(title_box)
+        self.main_layout.addWidget(self.title_box)
         self.main_layout.addStretch(1)
 
         # Counters: TOTAL | NEW | REVIEW | CONFIRMED | RESOLVED
         self.val_total = self._add_counter_item("TOTAL", "0", Theme.TEXT_PRIMARY)
-        self._add_v_separator()
-        self.val_new = self._add_counter_item("NEW", "0", Theme.ACCENT)
-        self._add_v_separator()
-        self.val_review = self._add_counter_item("REVIEW", "0", Theme.STATUS_WARNING)
-        self._add_v_separator()
-        self.val_confirmed = self._add_counter_item("CONFIRMED", "0", Theme.STATUS_SUCCESS)
-        self._add_v_separator()
-        self.val_resolved = self._add_counter_item("RESOLVED", "0", Theme.TEXT_SECONDARY)
+        self.sep1 = self._add_v_separator()
+        self.val_new = self._add_counter_item("NEW", "0", Theme.INCIDENT_NEW)
+        self.sep2 = self._add_v_separator()
+        self.val_review = self._add_counter_item("REVIEW", "0", Theme.INCIDENT_REVIEW)
+        self.sep3 = self._add_v_separator()
+        self.val_confirmed = self._add_counter_item("CONFIRMED", "0", Theme.INCIDENT_CONFIRMED)
+        self.sep4 = self._add_v_separator()
+        self.val_resolved = self._add_counter_item("RESOLVED", "0", Theme.INCIDENT_RESOLVED)
+        
+        self.counter_widgets = [self.val_total, self.val_new, self.val_review, self.val_confirmed, self.val_resolved]
 
     def _add_counter_item(self, label: str, init_val: str, color: str) -> QLabel:
         box = QWidget()
@@ -81,6 +84,7 @@ class IncidentCountersBar(QFrame):
         sep.setFrameShape(QFrame.Shape.VLine)
         sep.setStyleSheet(f"color: {Theme.BORDER};")
         self.main_layout.addWidget(sep)
+        return sep
 
     def update_counts(self, incidents: List[Incident]):
         total = len(incidents)
@@ -97,6 +101,14 @@ class IncidentCountersBar(QFrame):
         self.val_resolved.setText(str(res_cnt))
         self.active_sub_lbl.setText(f"{active_cnt} ACTIVE")
 
+    def set_responsive_state(self, state: ScreenSize):
+        if state == ScreenSize.MINIMUM:
+            self.title_box.hide()
+            self.main_layout.setContentsMargins(4, 10, 4, 10)
+        else:
+            self.title_box.show()
+            self.main_layout.setContentsMargins(24, 10, 24, 10)
+
 
 class IncidentFilterBar(QFrame):
     """
@@ -108,18 +120,18 @@ class IncidentFilterBar(QFrame):
         self.setFixedHeight(44)
         self.setStyleSheet(f"""
             IncidentFilterBar {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 6px;
             }}
         """)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 0, 16, 0)
-        layout.setSpacing(8)
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(16, 0, 16, 0)
+        self.layout.setSpacing(8)
 
-        lbl = QLabel("FILTER:")
-        lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold; letter-spacing: 0.8px;")
-        layout.addWidget(lbl)
+        self.lbl = QLabel("FILTER:")
+        self.lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold; letter-spacing: 0.8px;")
+        self.layout.addWidget(self.lbl)
 
         self.filter_buttons = {}
         filters = ["ALL", "NEW", "REVIEW", "CONFIRMED", "RESOLVED"]
@@ -129,10 +141,10 @@ class IncidentFilterBar(QFrame):
             btn.setCheckable(True)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(lambda checked, name=f: self._on_btn_clicked(name))
-            layout.addWidget(btn)
+            self.layout.addWidget(btn)
             self.filter_buttons[f] = btn
 
-        layout.addStretch()
+        self.layout.addStretch()
         self._set_active_filter("ALL")
 
     def _set_active_filter(self, active_name: str):
@@ -142,7 +154,7 @@ class IncidentFilterBar(QFrame):
             if is_active:
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background-color: {Theme.BG_SECONDARY};
+                        background-color: {Theme.SURFACE};
                         color: {Theme.ACCENT};
                         border: 1px solid {Theme.ACCENT};
                         border-radius: 4px;
@@ -174,6 +186,14 @@ class IncidentFilterBar(QFrame):
         self._set_active_filter(name)
         self.on_filter_changed(name)
 
+    def set_responsive_state(self, state: ScreenSize):
+        if state == ScreenSize.MINIMUM:
+            self.lbl.hide()
+            self.layout.setSpacing(4)
+        else:
+            self.lbl.show()
+            self.layout.setSpacing(8)
+
 
 class IncidentsView(QWidget):
     """
@@ -189,6 +209,7 @@ class IncidentsView(QWidget):
         super().__init__()
         self.data_service = DataService()
         self._last_selected_id: Optional[str] = None
+        self.current_state = None
         self._setup_ui()
         self._init_data()
         self._start_live_updates()
@@ -202,19 +223,22 @@ class IncidentsView(QWidget):
         self.counters_bar = IncidentCountersBar()
         self.main_layout.addWidget(self.counters_bar)
 
-        # 2. Main Middle Area (List + Detail)
-        middle_layout = QHBoxLayout()
-        middle_layout.setSpacing(16)
+        # 2. Main Middle Area (Splitter)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setStyleSheet("QSplitter::handle { background-color: transparent; }")
 
         # Left: Reusable IncidentList widget
         self.incident_list = IncidentList()
-        middle_layout.addWidget(self.incident_list, 38)
+        self.splitter.addWidget(self.incident_list)
 
         # Right: Reusable IncidentDetail widget
         self.incident_detail = IncidentDetail()
-        middle_layout.addWidget(self.incident_detail, 62)
+        self.splitter.addWidget(self.incident_detail)
 
-        self.main_layout.addLayout(middle_layout, 1)
+        self.splitter.setStretchFactor(0, 4)
+        self.splitter.setStretchFactor(1, 6)
+
+        self.main_layout.addWidget(self.splitter, 1)
 
         # 3. Bottom Filter Toolbar
         self.filter_bar = IncidentFilterBar(self._on_filter_changed)
@@ -286,3 +310,19 @@ class IncidentsView(QWidget):
         match = self.data_service.get_incident(incident_id)
         if match:
             self.incident_list.select_incident(match)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        
+        self.counters_bar.set_responsive_state(state)
+        self.filter_bar.set_responsive_state(state)
+        
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            self.splitter.setOrientation(Qt.Orientation.Vertical)
+            self.main_layout.setContentsMargins(8, 8, 8, 8)
+        else:
+            self.splitter.setOrientation(Qt.Orientation.Horizontal)
+            self.splitter.setSizes([int(self.width() * 0.4), int(self.width() * 0.6)])
+            self.main_layout.setContentsMargins(24, 20, 24, 20)

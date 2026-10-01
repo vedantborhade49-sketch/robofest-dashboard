@@ -1,7 +1,10 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QGridLayout
+)
 from PySide6.QtCore import Qt, QTimer
 from app.ui.theme import Theme
 from app.services.data_service import DataService
+from app.ui.responsive import ScreenSize
 
 from app.ui.widgets.overview_panels import (
     MissionStatusPanel, DroneStatusPanel, SystemStatusPanel,
@@ -13,62 +16,117 @@ class OverviewView(QWidget):
     def __init__(self):
         super().__init__()
         
-        # Initialize the DataService
         self.data_service = DataService()
-        
+        self.current_state = None
         self._setup_ui()
         self._start_live_updates()
         
     def _setup_ui(self):
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(24, 24, 24, 24)
-        self.layout.setSpacing(16)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
         
-        # 1. Top Status Row
-        top_row = QHBoxLayout()
-        top_row.setSpacing(16)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
         
+        self.scroll_content = QWidget()
+        self.scroll_content.setStyleSheet("background-color: transparent;")
+        
+        self.content_layout = QVBoxLayout(self.scroll_content)
+        self.content_layout.setContentsMargins(Theme.LG, Theme.LG, Theme.LG, Theme.LG)
+        self.content_layout.setSpacing(Theme.MD)
+        
+        self.scroll_area.setWidget(self.scroll_content)
+        self.main_layout.addWidget(self.scroll_area)
+        
+        # Instantiate Panels
         self.mission_panel = MissionStatusPanel()
         self.drone_panel = DroneStatusPanel()
         self.system_panel = SystemStatusPanel()
-        
-        top_row.addWidget(self.mission_panel, 1)
-        top_row.addWidget(self.drone_panel, 1)
-        top_row.addWidget(self.system_panel, 1)
-        
-        self.layout.addLayout(top_row)
-        
-        # 2. Middle Row (Camera & Map)
-        mid_row = QHBoxLayout()
-        mid_row.setSpacing(16)
-        
         self.camera_panel = CameraPlaceholderPanel()
         self.map_panel = MapPlaceholderPanel()
-        
-        mid_row.addWidget(self.camera_panel, 1)
-        mid_row.addWidget(self.map_panel, 1)
-        
-        self.layout.addLayout(mid_row, 1)
-        
-        # 3. Bottom Row (Incidents, Health, Events)
-        bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(16)
-        
         self.incidents_panel = IncidentsPanel()
         self.health_panel = SystemHealthPanel()
         self.events_panel = EventLogPanel()
         
-        bottom_row.addWidget(self.incidents_panel, 1)
-        bottom_row.addWidget(self.health_panel, 1)
-        bottom_row.addWidget(self.events_panel, 1)
+        self.panels = [
+            self.mission_panel, self.drone_panel, self.system_panel,
+            self.camera_panel, self.map_panel,
+            self.incidents_panel, self.health_panel, self.events_panel
+        ]
         
-        self.layout.addLayout(bottom_row)
+        # Grid layout for dynamic reflow
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(Theme.MD)
+        self.content_layout.addLayout(self.grid_layout)
+        self.content_layout.addStretch(1)
         
-    def _start_live_updates(self):
-        # Initial population from central state
-        self._fetch_and_update_data()
+        # Default layout (LARGE)
+        self._apply_large_layout()
+        
+    def _clear_grid(self):
+        for i in reversed(range(self.grid_layout.count())):
+            item = self.grid_layout.itemAt(i)
+            if item.widget():
+                item.widget().setParent(None)
+                
+    def _apply_large_layout(self):
+        self._clear_grid()
+        self.grid_layout.addWidget(self.mission_panel, 0, 0)
+        self.grid_layout.addWidget(self.drone_panel, 0, 1)
+        self.grid_layout.addWidget(self.system_panel, 0, 2)
+        
+        self.grid_layout.addWidget(self.camera_panel, 1, 0, 1, 2)
+        self.grid_layout.addWidget(self.map_panel, 1, 2)
+        
+        self.grid_layout.addWidget(self.incidents_panel, 2, 0)
+        self.grid_layout.addWidget(self.health_panel, 2, 1)
+        self.grid_layout.addWidget(self.events_panel, 2, 2)
+        
+    def _apply_compact_layout(self):
+        self._clear_grid()
+        self.grid_layout.addWidget(self.mission_panel, 0, 0)
+        self.grid_layout.addWidget(self.drone_panel, 0, 1)
+        
+        self.grid_layout.addWidget(self.system_panel, 1, 0, 1, 2)
+        
+        self.grid_layout.addWidget(self.camera_panel, 2, 0, 1, 2)
+        self.grid_layout.addWidget(self.map_panel, 3, 0, 1, 2)
+        
+        self.grid_layout.addWidget(self.incidents_panel, 4, 0, 1, 2)
+        self.grid_layout.addWidget(self.health_panel, 5, 0, 1, 2)
+        self.grid_layout.addWidget(self.events_panel, 6, 0, 1, 2)
 
-        # Connect to centralized reactive data signals
+    def _apply_minimum_layout(self):
+        self._clear_grid()
+        row = 0
+        for panel in self.panels:
+            self.grid_layout.addWidget(panel, row, 0)
+            row += 1
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        
+        for panel in self.panels:
+            if hasattr(panel, "set_responsive_state"):
+                panel.set_responsive_state(state)
+                
+        if state == ScreenSize.MINIMUM:
+            self._apply_minimum_layout()
+        elif state == ScreenSize.COMPACT:
+            self._apply_compact_layout()
+        else:
+            self._apply_large_layout()
+            
+        # Re-add widgets to the visual hierarchy
+        for panel in self.panels:
+            panel.show()
+
+    def _start_live_updates(self):
+        self._fetch_and_update_data()
         self.data_service.mission_updated.connect(self.mission_panel.update_data)
         self.data_service.drone_updated.connect(self._on_drone_updated)
         self.data_service.system_updated.connect(self._on_system_updated)

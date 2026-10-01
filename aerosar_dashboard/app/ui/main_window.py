@@ -4,6 +4,7 @@ from app.ui.theme import Theme
 
 from app.ui.widgets.sidebar import Sidebar
 from app.ui.widgets.header import Header
+from app.ui.responsive import ScreenSize, get_screen_size
 
 # Import views
 from app.ui.views.overview_view import OverviewView
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
         
         self.setWindowTitle("STALLION AEROSAR — Ground Station")
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.current_screen_size = None
         
         # Apply global stylesheet
         self.setStyleSheet(Theme.get_global_stylesheet())
@@ -102,6 +104,20 @@ class MainWindow(QMainWindow):
             self.telemetry_worker.start()
         else:
             self.telemetry_worker = None
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_size = get_screen_size(self.width())
+        if new_size != self.current_screen_size:
+            self.current_screen_size = new_size
+            self._apply_responsive_state(new_size)
+
+    def _apply_responsive_state(self, state: ScreenSize):
+        self.sidebar.set_responsive_state(state)
+        self.header.set_responsive_state(state)
+        for view in self.views:
+            if hasattr(view, "set_responsive_state"):
+                view.set_responsive_state(state)
 
     def closeEvent(self, event):
         # Ensure workers are cleaned up on exit

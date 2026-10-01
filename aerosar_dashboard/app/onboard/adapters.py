@@ -10,6 +10,7 @@ from app.onboard.config import OnboardConfig
 # Domain imports
 from app.perception.perception_service import PerceptionService
 from app.perception.camera import VideoSource, MockCameraSource, WebcamSource, VideoFileSource, PiCameraSource
+from app.perception.detector import YOLODetector
 from app.spatial.service import SpatialService
 from app.telemetry.service import TelemetryService
 from app.services.incident_engine import IncidentEngine
@@ -26,7 +27,13 @@ class PerceptionAdapterService(OnboardService):
         self.incident_engine = incident_engine
         
         self.source = self._create_source()
-        self.perception = PerceptionService(source=self.source) 
+        self.detector = YOLODetector(
+            model_path=self.config.yolo_model_path,
+            confidence_threshold=self.config.yolo_confidence_threshold,
+            device=self.config.yolo_device,
+            image_size=self.config.yolo_image_size
+        )
+        self.perception = PerceptionService(source=self.source, detector=self.detector) 
         
         self._running = False
         self._camera_thread = None
@@ -102,6 +109,15 @@ class PerceptionAdapterService(OnboardService):
         
         while self._running:
             start_time = time.time()
+            
+            try:
+                if not self.source.is_opened():
+                    logger.warning("Camera source lost, attempting reconnect...")
+                    time.sleep(self.config.reconnect_delay_ms / 1000.0)
+                    self.source.open()
+                    continue
+            except AttributeError:
+                pass # is_opened not implemented on some mocks
             
             frame = self.source.read()
             if frame is not None:

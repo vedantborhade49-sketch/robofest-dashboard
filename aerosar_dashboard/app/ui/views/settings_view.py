@@ -11,6 +11,7 @@ from app.ui.theme import Theme
 from app.models.settings import DashboardSettings
 from app.services.settings_service import SettingsService
 from app.services.data_service import DataService
+from app.ui.responsive import ScreenSize
 
 class SettingsCategoryCard(QFrame):
     """Card container for a specific category of dashboard settings."""
@@ -185,55 +186,51 @@ class SettingsView(QWidget):
 
         container = QWidget()
         container.setStyleSheet("background-color: transparent;")
-        c_layout = QVBoxLayout(container)
-        c_layout.setContentsMargins(0, 4, 10, 20)
-        c_layout.setSpacing(16)
+        self.c_layout = QVBoxLayout(container)
+        self.c_layout.setContentsMargins(0, 4, 10, 20)
+        self.c_layout.setSpacing(16)
+        
+        self.cards = [
+            self._build_general_card(),
+            self._build_display_card(),
+            self._build_ai_card(),
+            self._build_camera_card(),
+            self._build_map_card(),
+            self._build_backend_card(),
+            self._build_comm_card(),
+            self._build_logging_card()
+        ]
+        self.sysinfo_card = self._build_sysinfo_card()
+        
+        self.grid = QGridLayout()
+        self.grid.setHorizontalSpacing(16)
+        self.grid.setVerticalSpacing(16)
+        self.c_layout.addLayout(self.grid)
+        self.c_layout.addWidget(self.sysinfo_card)
+        self.c_layout.addStretch()
 
-        # Two-column grid layout for cards
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(16)
-        grid.setVerticalSpacing(16)
-
-        # Card 1: GENERAL
-        card_general = self._build_general_card()
-        grid.addWidget(card_general, 0, 0)
-
-        # Card 2: DISPLAY
-        card_display = self._build_display_card()
-        grid.addWidget(card_display, 0, 1)
-
-        # Card 3: AI / PERCEPTION
-        card_ai = self._build_ai_card()
-        grid.addWidget(card_ai, 1, 0)
-
-        # Card 4: CAMERA
-        card_camera = self._build_camera_card()
-        grid.addWidget(card_camera, 1, 1)
-
-        # Card 5: MISSION MAP
-        card_map = self._build_map_card()
-        grid.addWidget(card_map, 2, 0)
-
-        # Card 6: BACKEND / DATA CONNECTION
-        card_backend = self._build_backend_card()
-        grid.addWidget(card_backend, 2, 1)
-
-        # Card 7: COMMUNICATION
-        card_comm = self._build_comm_card()
-        grid.addWidget(card_comm, 3, 0)
-
-        # Card 8: LOGGING
-        card_logging = self._build_logging_card()
-        grid.addWidget(card_logging, 3, 1)
-
-        c_layout.addLayout(grid)
-
-        # Card 9: SYSTEM INFORMATION (Full Width)
-        card_sysinfo = self._build_sysinfo_card()
-        c_layout.addWidget(card_sysinfo)
+        self.current_state = None
 
         scroll.setWidget(container)
         root_layout.addWidget(scroll, 1)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        
+        # Remove all cards from grid
+        for card in self.cards:
+            self.grid.removeWidget(card)
+            
+        columns = 2
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            columns = 1
+            
+        for i, card in enumerate(self.cards):
+            row = i // columns
+            col = i % columns
+            self.grid.addWidget(card, row, col)
 
     # -------------------------------------------------------------
     # CARD BUILDERS

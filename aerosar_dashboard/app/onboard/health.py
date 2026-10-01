@@ -16,9 +16,10 @@ class SystemHealthMonitor:
     Monitors system resources on the onboard computer (Raspberry Pi).
     Provides graceful fallbacks for laptop development environments.
     """
-    def __init__(self):
+    def __init__(self, config=None):
         self.os_info = platform.system()
         self.is_raspberry_pi = self._check_if_pi()
+        self.config = config
         
     def _check_if_pi(self) -> bool:
         if self.os_info != "Linux":
@@ -72,12 +73,30 @@ class SystemHealthMonitor:
 
     def get_health_report(self) -> Dict[str, Any]:
         """Generates a complete health snapshot."""
+        cpu = self.get_cpu_usage()
+        mem = self.get_memory_usage()
+        disk = self.get_disk_usage()
+        temp = self.get_temperature()
+        
+        status = "NORMAL"
+        if self.config:
+            if (cpu >= self.config.cpu_critical_threshold or 
+                mem >= self.config.mem_critical_threshold or 
+                temp >= self.config.temp_critical_threshold or
+                disk >= self.config.max_disk_usage_percent):
+                status = "CRITICAL"
+            elif (cpu >= self.config.cpu_warning_threshold or 
+                  mem >= self.config.mem_warning_threshold or 
+                  temp >= self.config.temp_warning_threshold):
+                status = "WARNING"
+                
         return {
             "timestamp": time.time(),
-            "cpu_percent": self.get_cpu_usage(),
-            "memory_percent": self.get_memory_usage(),
-            "disk_percent": self.get_disk_usage(),
-            "temperature_c": self.get_temperature(),
+            "status": status,
+            "cpu_percent": cpu,
+            "memory_percent": mem,
+            "disk_percent": disk,
+            "temperature_c": temp,
             "is_pi": self.is_raspberry_pi,
             "os": self.os_info
         }

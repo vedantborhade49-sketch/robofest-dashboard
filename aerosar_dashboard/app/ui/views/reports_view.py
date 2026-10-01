@@ -1,6 +1,6 @@
 from typing import List, Optional
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QSplitter
 )
 from PySide6.QtCore import Qt, QTimer, Signal
 from app.ui.theme import Theme
@@ -8,6 +8,7 @@ from app.services.data_service import DataService
 from app.models.report import Report
 from app.ui.widgets.report_list import ReportList
 from app.ui.widgets.report_detail import ReportDetail
+from app.ui.responsive import ScreenSize
 
 class ReportCountersBar(QFrame):
     """
@@ -19,41 +20,43 @@ class ReportCountersBar(QFrame):
         self.setFixedHeight(54)
         self.setStyleSheet(f"""
             ReportCountersBar {{
-                background-color: {Theme.BG_PANEL};
+                background-color: {Theme.SURFACE_ELEVATED};
                 border: 1px solid {Theme.BORDER};
                 border-radius: 6px;
             }}
         """)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 0, 20, 0)
-        layout.setSpacing(14)
+        self.main_layout = QHBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 0, 20, 0)
+        self.main_layout.setSpacing(14)
 
         # Title & Subtitle
-        title_box = QVBoxLayout()
-        title_box.setSpacing(2)
-        title_box.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        self.title_box = QWidget()
+        title_l = QVBoxLayout(self.title_box)
+        title_l.setContentsMargins(0, 0, 0, 0)
+        title_l.setSpacing(2)
+        title_l.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        title = QLabel("REPORTS / MISSION INTELLIGENCE")
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; letter-spacing: 0.8px;")
-        title_box.addWidget(title)
+        self.title = QLabel("REPORTS / MISSION INTELLIGENCE")
+        self.title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; letter-spacing: 0.8px;")
+        title_l.addWidget(self.title)
 
-        sub = QLabel("RAG RETRIEVAL & AI INCIDENT SYNTHESIS (SIMULATED)")
-        sub.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 9px; font-weight: 600; letter-spacing: 0.5px;")
-        title_box.addWidget(sub)
+        self.sub = QLabel("RAG RETRIEVAL & AI INCIDENT SYNTHESIS (SIMULATED)")
+        self.sub.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 9px; font-weight: 600; letter-spacing: 0.5px;")
+        title_l.addWidget(self.sub)
 
-        layout.addLayout(title_box)
-        layout.addStretch(1)
+        self.main_layout.addWidget(self.title_box)
+        self.main_layout.addStretch(1)
 
         # Counters: TOTAL | GENERATED | REVIEWED | PENDING | UNAVAILABLE
-        self.val_total = self._add_counter_item(layout, "TOTAL", "0", Theme.TEXT_PRIMARY)
-        self._add_v_separator(layout)
-        self.val_generated = self._add_counter_item(layout, "GENERATED", "0", Theme.ACCENT)
-        self._add_v_separator(layout)
-        self.val_reviewed = self._add_counter_item(layout, "REVIEWED", "0", Theme.STATUS_SUCCESS)
-        self._add_v_separator(layout)
-        self.val_pending = self._add_counter_item(layout, "PENDING", "0", Theme.STATUS_WARNING)
-        self._add_v_separator(layout)
-        self.val_unavail = self._add_counter_item(layout, "UNAVAILABLE", "0", Theme.TEXT_SECONDARY)
+        self.val_total = self._add_counter_item(self.main_layout, "TOTAL", "0", Theme.TEXT_PRIMARY)
+        self.sep1 = self._add_v_separator(self.main_layout)
+        self.val_generated = self._add_counter_item(self.main_layout, "GENERATED", "0", Theme.ACCENT)
+        self.sep2 = self._add_v_separator(self.main_layout)
+        self.val_reviewed = self._add_counter_item(self.main_layout, "REVIEWED", "0", Theme.SUCCESS)
+        self.sep3 = self._add_v_separator(self.main_layout)
+        self.val_pending = self._add_counter_item(self.main_layout, "PENDING", "0", Theme.WARNING)
+        self.sep4 = self._add_v_separator(self.main_layout)
+        self.val_unavail = self._add_counter_item(self.main_layout, "UNAVAILABLE", "0", Theme.TEXT_SECONDARY)
 
     def _add_counter_item(self, layout: QHBoxLayout, label: str, init_val: str, color: str) -> QLabel:
         box = QWidget()
@@ -81,6 +84,7 @@ class ReportCountersBar(QFrame):
         sep.setStyleSheet(f"border: none; border-left: 1px solid {Theme.BORDER};")
         sep.setFixedHeight(26)
         layout.addWidget(sep)
+        return sep
 
     def update_counts(self, reports: List[Report]):
         total = len(reports)
@@ -94,6 +98,14 @@ class ReportCountersBar(QFrame):
         self.val_reviewed.setText(str(rev))
         self.val_pending.setText(str(pen))
         self.val_unavail.setText(str(unav))
+        
+    def set_responsive_state(self, state: ScreenSize):
+        if state == ScreenSize.MINIMUM:
+            self.title_box.hide()
+            self.main_layout.setContentsMargins(4, 0, 4, 0)
+        else:
+            self.title_box.show()
+            self.main_layout.setContentsMargins(20, 0, 20, 0)
 
 
 class ReportsView(QWidget):
@@ -113,6 +125,7 @@ class ReportsView(QWidget):
     def __init__(self):
         super().__init__()
         self.data_service = DataService()
+        self.current_state = None
         self._setup_ui()
         self._init_data()
         self._start_live_updates()
@@ -126,22 +139,39 @@ class ReportsView(QWidget):
         self.counters_bar = ReportCountersBar()
         self.main_layout.addWidget(self.counters_bar)
 
-        # 2. Main Area: Left List + Right Detail
-        middle_layout = QHBoxLayout()
-        middle_layout.setSpacing(16)
+        # 2. Main Area: Splitter List + Detail
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setStyleSheet("QSplitter::handle { background-color: transparent; }")
 
         self.report_list = ReportList()
-        middle_layout.addWidget(self.report_list, 32)
+        self.splitter.addWidget(self.report_list)
 
         self.report_detail = ReportDetail()
-        middle_layout.addWidget(self.report_detail, 68)
+        self.splitter.addWidget(self.report_detail)
 
-        self.main_layout.addLayout(middle_layout, 1)
+        self.splitter.setStretchFactor(0, 32)
+        self.splitter.setStretchFactor(1, 68)
+
+        self.main_layout.addWidget(self.splitter, 1)
 
         # Signal connections
         self.report_list.report_selected.connect(self._on_report_selected)
         self.report_detail.view_incident_requested.connect(self._on_view_incident)
         self.report_detail.review_report_requested.connect(self._on_review_report)
+
+    def set_responsive_state(self, state: ScreenSize):
+        if self.current_state == state:
+            return
+        self.current_state = state
+        self.counters_bar.set_responsive_state(state)
+        
+        if state in (ScreenSize.COMPACT, ScreenSize.MINIMUM):
+            self.splitter.setOrientation(Qt.Orientation.Vertical)
+            self.main_layout.setContentsMargins(8, 8, 8, 8)
+        else:
+            self.splitter.setOrientation(Qt.Orientation.Horizontal)
+            self.splitter.setSizes([int(self.width() * 0.32), int(self.width() * 0.68)])
+            self.main_layout.setContentsMargins(24, 20, 24, 20)
 
     def _init_data(self):
         reports = self.data_service.get_reports()

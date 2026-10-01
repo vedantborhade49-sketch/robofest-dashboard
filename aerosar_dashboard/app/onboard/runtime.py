@@ -8,6 +8,10 @@ from app.onboard.buffer import OnboardEventBuffer
 from app.onboard.health import SystemHealthMonitor
 from app.onboard.service_manager import ServiceManager, OnboardService
 from app.onboard.communication import CommunicationService
+from app.onboard.adapters import PerceptionAdapterService, SpatialAdapterService, TelemetryAdapterService
+from app.services.incident_engine import IncidentEngine
+from app.spatial.service import SpatialService
+from app.telemetry.service import TelemetryService
 from app.models.onboard import OnboardStatus, ServiceStatus
 
 logger = logging.getLogger(__name__)
@@ -20,7 +24,7 @@ class OnboardRuntime:
     def __init__(self, config: OnboardConfig):
         self.config = config
         self.buffer = OnboardEventBuffer(max_size=config.buffer_size)
-        self.health_monitor = SystemHealthMonitor()
+        self.health_monitor = SystemHealthMonitor(config=config)
         self.service_manager = ServiceManager()
         
         self.communication = CommunicationService(self.config, self.buffer)
@@ -35,11 +39,31 @@ class OnboardRuntime:
         """Registers all onboard services with the ServiceManager."""
         self.service_manager.register_service("communication", self.communication)
         
-        # In a full implementation, we'd wrap existing domain services in headless adapters:
-        # self.service_manager.register_service("camera", CameraAdapterService(...))
-        # self.service_manager.register_service("perception", PerceptionAdapterService(...))
-        # self.service_manager.register_service("spatial", SpatialAdapterService(...))
-        # self.service_manager.register_service("telemetry", TelemetryAdapterService(...))
+        # Domain core engines
+        self.incident_engine = IncidentEngine()
+        self.spatial_core = SpatialService()
+        self.telemetry_core = TelemetryService()
+        
+        # Headless Adapters for Pi
+        self.perception_adapter = PerceptionAdapterService(
+            config=self.config,
+            comms=self.communication,
+            incident_engine=self.incident_engine
+        )
+        self.spatial_adapter = SpatialAdapterService(
+            config=self.config,
+            comms=self.communication,
+            spatial_service=self.spatial_core
+        )
+        self.telemetry_adapter = TelemetryAdapterService(
+            config=self.config,
+            comms=self.communication,
+            telemetry_service=self.telemetry_core
+        )
+        
+        self.service_manager.register_service("perception", self.perception_adapter)
+        self.service_manager.register_service("spatial", self.spatial_adapter)
+        self.service_manager.register_service("telemetry", self.telemetry_adapter)
 
     def start(self):
         """Starts the onboard runtime and all services."""
