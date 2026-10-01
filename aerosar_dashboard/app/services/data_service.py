@@ -228,7 +228,7 @@ class DataService(QObject):
                 if self._state_manager._state:
                     from app.models.map import MapState
                     map_state = MapState(**payload)
-                    self._state_manager._state.map = map_state
+                    self._state_manager._state.map_state = map_state
                     self._state_manager.map_updated.emit(map_state)
 
             elif event_type == "PERCEPTION_STATUS" or event_type == "PERCEPTION_STATUS_UPDATE":

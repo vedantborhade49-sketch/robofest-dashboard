@@ -70,12 +70,10 @@ class TestStep25Onboard(unittest.TestCase):
         manager.stop_all()
         self.assertEqual(manager.statuses["mock"], "STOPPED")
 
-    @patch('app.onboard.communication.requests.post')
-    @patch('app.onboard.communication.requests.get')
-    def test_communication_offline_buffer(self, mock_get, mock_post):
+    @patch('app.onboard.communication.WebSocketTransport.connect')
+    def test_communication_offline_buffer(self, mock_connect):
         # Simulate offline
-        mock_get.return_value.status_code = 500
-        mock_post.return_value.status_code = 500
+        mock_connect.return_value = False
         
         comms = CommunicationService(self.config, self.buffer)
         comms.initialize()

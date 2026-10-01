@@ -123,6 +123,8 @@ class MissionMap(QWidget):
             min_dist = 22.0  # Click tolerance in pixels
 
             for inc in self._incidents:
+                if inc.location is None:
+                    continue
                 sp = self._to_screen(inc.location.x, inc.location.y)
                 dist = math.hypot(click_pt.x() - sp.x(), click_pt.y() - sp.y())
                 if dist < min_dist:
@@ -146,6 +148,8 @@ class MissionMap(QWidget):
         pos = event.position()
         hovering = False
         for inc in self._incidents:
+            if inc.location is None:
+                continue
             sp = self._to_screen(inc.location.x, inc.location.y)
             if math.hypot(pos.x() - sp.x(), pos.y() - sp.y()) < 20.0:
                 hovering = True
@@ -445,6 +449,8 @@ class MissionMap(QWidget):
     def _draw_incidents(self, painter: QPainter):
         """Draws all detected incidents from Incident.location."""
         for inc in self._incidents:
+            if inc.location is None:
+                continue
             sp = self._to_screen(inc.location.x, inc.location.y)
             is_selected = (inc.incident_id == self._selected_incident_id)
 
@@ -527,6 +533,8 @@ class MissionMap(QWidget):
             return
 
         dp = self._map_state.drone_position
+        if dp is None:
+            return
         sp = self._to_screen(dp.x, dp.y)
         heading_deg = self._map_state.drone_heading
 
