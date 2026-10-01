@@ -242,7 +242,7 @@ class MapPlaceholderPanel(BasePanel):
 class IncidentsPanel(BasePanel):
     def __init__(self):
         super().__init__("RECENT INCIDENTS")
-        self.setMinimumHeight(200)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         hdr_layout = QHBoxLayout()
         for t in ["ID", "TYPE", "CONF", "TIME", "STATUS"]:
@@ -287,7 +287,7 @@ class IncidentsPanel(BasePanel):
 class SystemHealthPanel(BasePanel):
     def __init__(self):
         super().__init__("SYSTEM HEALTH")
-        self.setMinimumHeight(200)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         grid = QGridLayout()
         grid.setSpacing(12)
@@ -336,7 +336,7 @@ class SystemHealthPanel(BasePanel):
 class EventLogPanel(BasePanel):
     def __init__(self):
         super().__init__("EVENT LOG")
-        self.setMinimumHeight(200)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.rows_layout = QVBoxLayout()
         self.rows_layout.setSpacing(6)
         self.layout.addLayout(self.rows_layout)

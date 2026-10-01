@@ -154,6 +154,7 @@ class MainWindow(QMainWindow):
         ]
         
         for view in self.views:
+            view.setMinimumSize(0, 0)
             self.stacked_widget.addWidget(view)
             
     def _on_page_changed(self, index: int, page_name: str):

@@ -22,7 +22,7 @@ class CameraPanel(QFrame):
         super().__init__()
         self.setStyleSheet(f"background-color: #030507; border: 1px solid {Theme.BORDER}; border-radius: 4px;")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setMinimumSize(640, 480)
+        self.setMinimumSize(320, 240)
         
         self.detections: List[Detection] = []
         self._pixmap: QPixmap | None = None

@@ -169,7 +169,7 @@ class ReportList(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setMinimumWidth(310)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMaximumWidth(360)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.reports: List[Report] = []

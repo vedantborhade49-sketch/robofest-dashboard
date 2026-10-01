@@ -29,7 +29,7 @@ class MissionMap(QWidget):
     def __init__(self):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setMinimumSize(450, 350)
+        self.setMinimumSize(250, 250)
         self.setMouseTracking(True)
 
         self._map_state: Optional[MapState] = None

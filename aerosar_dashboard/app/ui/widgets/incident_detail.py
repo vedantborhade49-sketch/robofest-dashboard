@@ -14,7 +14,7 @@ class EvidenceFrameWidget(QFrame):
     """
     def __init__(self):
         super().__init__()
-        self.setMinimumHeight(210)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.incident: Optional[Incident] = None
 
