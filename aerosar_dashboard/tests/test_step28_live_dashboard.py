@@ -20,8 +20,8 @@ class TestStep28LiveDashboard(unittest.TestCase):
         self.data_service = DataService()
         self.data_service.set_provider(self.provider)
         
-        # Reset state cleanly
-        self.data_service.state_manager._state = None
+        # Initialize state cleanly
+        self.data_service.state_manager.initialize_from_provider(self.provider)
         
         # Mock realtime client connection
         self.data_service._realtime_client.connect_to_server = MagicMock()
@@ -39,16 +39,10 @@ class TestStep28LiveDashboard(unittest.TestCase):
                 "longitude": -118.0,
                 "altitude": 100.5,
                 "heading": 45.0,
-                "velocity_x": 0.0,
-                "velocity_y": 0.0,
-                "velocity_z": 0.0,
-                "battery_voltage": 12.4,
-                "battery_current": 1.0,
-                "battery_remaining": 95,
-                "gps_satellites": 12,
-                "gps_fix_type": 3,
-                "flight_mode": "GUIDED",
-                "armed": True
+                "speed": 10.0,
+                "battery": 95.0,
+                "signal": 100.0,
+                "position": {"latitude": 34.0, "longitude": -118.0, "x": 0.0, "y": 0.0, "z": 100.5}
             }
         }
         
@@ -61,16 +55,16 @@ class TestStep28LiveDashboard(unittest.TestCase):
         
         telem = self.data_service.get_telemetry_data()
         self.assertIsNotNone(telem)
-        self.assertEqual(telem.latitude, 34.0)
-        self.assertEqual(telem.flight_mode, "GUIDED")
+        self.assertEqual(telem.altitude, 100.5)
         
     def test_realtime_incident_routing(self):
         event_payload = {
             "incident": {
                 "incident_id": "TEST-INC-1",
-                "class_name": "person",
+                "type": "person",
                 "confidence": 0.99,
-                "status": "NEW"
+                "status": "NEW",
+                "timestamp": "2026-10-01T00:00:00"
             }
         }
         
@@ -86,7 +80,7 @@ class TestStep28LiveDashboard(unittest.TestCase):
         
     def test_realtime_spatial_routing(self):
         event_payload = {
-            "uav_pose": {"x": 10.0, "y": 20.0, "z": 5.0, "yaw": 1.0}
+            "drone_position": {"latitude": 0.0, "longitude": 0.0, "x": 10.0, "y": 20.0, "z": 5.0}
         }
         
         event = {
@@ -97,8 +91,8 @@ class TestStep28LiveDashboard(unittest.TestCase):
         self.data_service._on_realtime_event(event)
         
         map_state = self.data_service.get_map_state()
-        self.assertIsNotNone(map_state.uav_pose)
-        self.assertEqual(map_state.uav_pose.x, 10.0)
+        self.assertIsNotNone(map_state.drone_position)
+        self.assertEqual(map_state.drone_position.x, 10.0)
 
 if __name__ == "__main__":
     unittest.main()
