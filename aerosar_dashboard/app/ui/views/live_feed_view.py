@@ -82,13 +82,23 @@ class LiveFeedView(QWidget):
     def _start_perception_worker(self):
         # Create perception worker + thread
         self._perception_thread = QThread(self)
-        # configure default camera source
+        # configure default camera source and YOLO model from settings
         from app.services.settings_service import SettingsService
+        from app.perception.detector import YOLODetector
         settings = SettingsService().get_settings()
+        
         cam_index = getattr(settings, "perception_camera_index", 0)
         source = OpenCVVideoSource(cam_index)
-        self._perception_worker = PerceptionWorker()
-        self._perception_worker.service.source = source
+        
+        model_name = getattr(settings, "detection_model", "person_detector")
+        model_path = f"{model_name}.pt" if model_name != "person_detector" else "yolov8n.pt"
+        conf_thresh = getattr(settings, "confidence_threshold", 0.5)
+        
+        detector = YOLODetector(model_path=model_path, confidence_threshold=conf_thresh, target_classes=["person"])
+        
+        from app.perception.perception_service import PerceptionService
+        service = PerceptionService(source=source, detector=detector, confidence_threshold=conf_thresh)
+        self._perception_worker = PerceptionWorker(service=service)
         self._perception_worker.moveToThread(self._perception_thread)
 
         # connect lifecycle
