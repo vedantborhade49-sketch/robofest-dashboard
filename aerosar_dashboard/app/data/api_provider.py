@@ -48,7 +48,7 @@ class APIDataProvider(DataProvider):
                 resp = self.client.get(f"{self.base_url}/incidents")
                 if resp.status_code == 200:
                     data = resp.json()
-                    self._incidents = [Incident(**i) for i in data.get("incidents", data)]
+                    self._incidents = [Incident(**i) for i in (data.get("incidents", data) if isinstance(data, dict) else data)]
             except Exception as e:
                 logger.warning(f"Could not sync initial incidents: {e}")
 
@@ -57,7 +57,7 @@ class APIDataProvider(DataProvider):
                 resp = self.client.get(f"{self.base_url}/reports")
                 if resp.status_code == 200:
                     data = resp.json()
-                    self._reports = [Report(**r) for r in data.get("reports", data)]
+                    self._reports = [Report(**r) for r in (data.get("reports", data) if isinstance(data, dict) else data)]
             except Exception as e:
                 logger.warning(f"Could not sync initial reports: {e}")
 

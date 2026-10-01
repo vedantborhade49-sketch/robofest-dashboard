@@ -157,6 +157,14 @@ class MainWindow(QMainWindow):
             view.setMinimumSize(0, 0)
             self.stacked_widget.addWidget(view)
             
+        # Connect perception worker to overview panels
+        if hasattr(self.live_feed_view, "_perception_worker"):
+            try:
+                self.live_feed_view._perception_worker.frame_ready.connect(self.overview_view.camera_panel.update_frame)
+                self.live_feed_view._perception_worker.detections_ready.connect(self.overview_view.camera_panel.update_detections)
+            except Exception as e:
+                pass
+            
     def _on_page_changed(self, index: int, page_name: str):
         # Update stacked widget
         self.stacked_widget.setCurrentIndex(index)

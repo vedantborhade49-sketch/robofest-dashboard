@@ -54,7 +54,7 @@ class IncidentCreateRequest(BaseModel):
     confidence: float
     timestamp: datetime
     bbox: Optional[Dict[str, float]] = None
-    location: LocationRequest
+    location: Optional[LocationRequest] = None
     evidence_image: Optional[str] = None
     status: str = "NEW"
     
@@ -76,7 +76,7 @@ class IncidentCreateRequest(BaseModel):
             confidence=self.confidence,
             timestamp=self.timestamp,
             bbox=bbox,
-            location=Location(**self.location.model_dump()),
+            location=Location(**self.location.model_dump()) if self.location else None,
             evidence_image=self.evidence_image,
             status=self.status,
             spatial_status=self.spatial_status,
@@ -122,7 +122,7 @@ class IncidentResponse(BaseModel):
     confidence: float
     timestamp: datetime
     bbox: Optional[Dict[str, float]] = None
-    location: LocationRequest
+    location: Optional[LocationRequest] = None
     evidence_image: Optional[str] = None
     status: str = "NEW"
     spatial_status: str = "UNAVAILABLE"
@@ -175,7 +175,7 @@ class IncidentSummaryRequest(BaseModel):
     type: str = "PERSON DETECTED"
     confidence: float
     timestamp: datetime
-    location: LocationRequest
+    location: Optional[LocationRequest] = None
     status: str = "NEW"
 
     def to_summary(self) -> IncidentSummary:
@@ -184,7 +184,7 @@ class IncidentSummaryRequest(BaseModel):
             type=self.type,
             confidence=self.confidence,
             timestamp=self.timestamp,
-            location=Location(**self.location.model_dump()),
+            location=Location(**self.location.model_dump()) if self.location else None,
             status=self.status,
         )
 

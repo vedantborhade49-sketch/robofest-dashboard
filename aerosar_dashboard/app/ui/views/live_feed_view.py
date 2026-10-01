@@ -5,7 +5,7 @@ from app.ui.widgets.live_feed_panels import (
     CameraPanel, AIPerceptionPanel, DetectionListPanel, CameraStatusBar
 )
 from app.perception.qt_worker import PerceptionWorker
-from app.perception.camera import OpenCVVideoSource
+from app.perception.camera import WebcamSource
 from app.ui.responsive import ScreenSize
 
 
@@ -88,7 +88,7 @@ class LiveFeedView(QWidget):
         settings = SettingsService().get_settings()
         
         cam_index = getattr(settings, "perception_camera_index", 0)
-        source = OpenCVVideoSource(cam_index)
+        source = WebcamSource(int(cam_index))
         
         model_name = getattr(settings, "detection_model", "person_detector")
         model_path = f"{model_name}.pt" if model_name != "person_detector" else "yolov8n.pt"

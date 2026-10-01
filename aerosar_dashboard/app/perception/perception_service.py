@@ -32,6 +32,8 @@ class PerceptionService:
         self.status.model_name = "AEROSAR YOLO"
         self.status.input_source = getattr(self.source, "source", "unknown") if self.source else "unknown"
         self.status.error = None
+        if self.source is not None:
+            self.source.open()
 
     def stop(self):
         self._running = False

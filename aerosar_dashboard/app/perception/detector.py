@@ -11,7 +11,11 @@ except Exception:  # pragma: no cover
 
 class YOLODetector:
     def __init__(self, model_path: str = "yolov8n.pt", confidence_threshold: float = 0.5, device: str = "cpu", image_size: int = 640, target_classes: Optional[List[str]] = None):
-        self.model_path = model_path
+        import os
+        if not os.path.exists(model_path) and model_path.endswith(".pt"):
+            self.model_path = "yolov8n.pt"
+        else:
+            self.model_path = model_path
         self.confidence_threshold = confidence_threshold
         self.device = device
         self.image_size = image_size

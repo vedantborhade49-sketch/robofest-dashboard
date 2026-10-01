@@ -173,24 +173,12 @@ class CameraPlaceholderPanel(BasePanel):
     def __init__(self):
         super().__init__("LIVE CAMERA FEED")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        from app.ui.widgets.live_feed_panels import CameraPanel
+        self.camera_feed = CameraPanel()
+        # Remove background style from CameraPanel to match Overview design
+        self.camera_feed.setStyleSheet("border: none; background-color: transparent;")
         
-        feed_area = QFrame()
-        feed_area.setStyleSheet(f"background-color: {Theme.BG_BASE}; border: 1px dashed {Theme.BORDER}; border-radius: 4px;")
-        feed_layout = QVBoxLayout(feed_area)
-        feed_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        lbl1 = QLabel("NO LIVE FEED")
-        lbl1.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 18px; font-weight: bold; border: none;")
-        lbl1.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        lbl2 = QLabel("AWAITING CAMERA CONNECTION")
-        lbl2.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 12px; border: none;")
-        lbl2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        feed_layout.addWidget(lbl1)
-        feed_layout.addWidget(lbl2)
-        
-        self.layout.addWidget(feed_area, 1)
+        self.layout.addWidget(self.camera_feed, 1)
         
         # Stats row
         stats_layout = QHBoxLayout()
@@ -211,6 +199,12 @@ class CameraPlaceholderPanel(BasePanel):
             self.cam_status.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 11px; font-weight: bold; border: none;")
             self.cam_fps.setText(f"FPS: {cam.fps:.1f}")
             self.cam_lat.setText(f"LATENCY: {cam.latency:.0f}ms")
+
+    def update_frame(self, frame):
+        self.camera_feed.update_frame(frame)
+        
+    def update_detections(self, detections):
+        self.camera_feed.update_data(detections)
 
 class MapPlaceholderPanel(BasePanel):
     def __init__(self):
