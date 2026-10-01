@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QPainter, QColor, QPen, QImage, QPixmap
 import cv2
+import numpy as np
 from app.ui.theme import Theme
 from app.models.camera import Camera
 from app.models.ai import AIStatus
@@ -49,17 +50,21 @@ class CameraPanel(QFrame):
         try:
             if frame is None:
                 return
-            # Convert BGR (OpenCV) to RGB
+            
+            # frame is already RGB from FrameProcessor, we just need to create QImage
+            # ensure contiguous array
+            if not frame.flags['C_CONTIGUOUS']:
+                frame = np.ascontiguousarray(frame)
+                
             if frame.ndim == 3 and frame.shape[2] == 3:
-                img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = img.shape
+                h, w, ch = frame.shape
                 bytes_per_line = ch * w
-                qimg = QImage(img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+                qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888).copy()
             else:
                 # grayscale or unexpected format
                 h, w = frame.shape[:2]
                 bytes_per_line = w
-                qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_Grayscale8)
+                qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_Grayscale8).copy()
 
             self._pixmap = QPixmap.fromImage(qimg)
             # hide placeholder labels when showing real frames

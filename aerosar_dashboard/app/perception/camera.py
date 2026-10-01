@@ -52,8 +52,12 @@ class WebcamSource(OpenCVVideoSource):
         self.index = index
         
     def open(self):
-        # On Windows cv2.CAP_DSHOW might be better, but we leave default
-        self._cap = cv2.VideoCapture(self.index)
+        # On Windows cv2.CAP_DSHOW is much more reliable
+        import sys
+        if sys.platform.startswith('win'):
+            self._cap = cv2.VideoCapture(self.index, cv2.CAP_DSHOW)
+        else:
+            self._cap = cv2.VideoCapture(self.index)
         return self._cap is not None and self._cap.isOpened()
 
 class VideoFileSource(OpenCVVideoSource):

@@ -96,7 +96,7 @@ class LiveFeedView(QWidget):
             source = MockCameraSource()
         else:
             from app.perception.camera import TCPVideoProvider, WebcamSource
-            if settings.camera_source == "Network Camera":
+            if getattr(settings, "camera_source", "") == "Network Camera":
                 reconnect_delay = getattr(settings, "camera_reconnect_delay", 2.0)
                 frame_timeout = getattr(settings, "camera_frame_timeout", 2.0)
                 source = TCPVideoProvider(host=host, port=port, reconnect_delay=reconnect_delay, frame_timeout=frame_timeout)

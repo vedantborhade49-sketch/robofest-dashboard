@@ -43,9 +43,12 @@ class PerceptionService:
         self.status.model_loaded = getattr(self.processor, "detector", None) is not None and getattr(self.processor.detector, "model_loaded", True)
         self.status.model_name = getattr(self.processor, "model_name", "CVProcessor")
         self.status.input_source = getattr(self.source, "source", "unknown") if self.source else "unknown"
-        self.status.error = None
-        if self.source is not None:
-            self.source.open()
+        if self.source:
+            if not self.source.is_open():
+                success = self.source.open()
+                if not success:
+                    self.status.error = "Failed to open video source"
+        self.status.error = self.status.error or None
 
     def stop(self):
         self._running = False
