@@ -18,6 +18,9 @@ class PerceptionStatus:
     source_type: str = "mock"
     camera_connected: bool = False
     device: str = "CPU"
+    received_fps: float = 0.0
+    dropped_frames: int = 0
+    connection_state: str = "DISCONNECTED"
 
 
 @dataclass

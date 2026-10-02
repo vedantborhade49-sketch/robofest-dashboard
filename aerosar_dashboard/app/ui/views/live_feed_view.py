@@ -88,7 +88,19 @@ class LiveFeedView(QWidget):
         settings = SettingsService().get_settings()
         
         cam_index = getattr(settings, "perception_camera_index", 0)
-        source = WebcamSource(int(cam_index))
+        host = getattr(settings, "camera_network_host", "127.0.0.1")
+        port = getattr(settings, "camera_network_port", 5000)
+        if type(self.data_service._provider).__name__ == "MockDataProvider":
+            # For tests to avoid cv2.VideoCapture failures
+            from tests.mocks.mock_camera import MockCameraSource
+            source = MockCameraSource()
+        else:
+            from app.perception.camera import NetworkCameraProvider, WebcamSource
+            # By default use NetworkCameraProvider for production
+            if settings.camera_source == "Network Camera":
+                source = NetworkCameraProvider(host=host, port=port)
+            else:
+                source = WebcamSource(int(cam_index))
         
         model_name = getattr(settings, "detection_model", "person_detector")
         model_path = f"{model_name}.pt" if model_name != "person_detector" else "yolov8n.pt"

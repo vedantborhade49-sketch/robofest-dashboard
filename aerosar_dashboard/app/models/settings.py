@@ -27,7 +27,10 @@ class DashboardSettings(BaseModel):
     show_detection_labels: bool = True
 
     # 4. CAMERA
-    camera_source: str = "Mock Camera"
+    camera_source: str = "Network Camera"
+    camera_network_host: str = "127.0.0.1"
+    camera_network_port: int = 5000
+    camera_reconnect_delay: float = 2.0
     camera_resolution: str = "1280 × 720"
     camera_fps: int = Field(default=30, gt=0, description="Target frame rate")
     mirror_preview: bool = False
@@ -45,12 +48,12 @@ class DashboardSettings(BaseModel):
     map_show_explored_area: bool = True
 
     # 6. BACKEND / DATA CONNECTION
-    backend_mode: str = "MOCK"
+    backend_mode: str = "LIVE"
     backend_url: str = "http://localhost:8000"
     auto_reconnect: bool = True
 
     # 7. COMMUNICATION
-    communication_mode: str = "SIMULATED"
+    communication_mode: str = "NETWORK"
     transport: str = "LOCAL"
     update_interval_ms: int = Field(default=500, gt=0)
     connection_timeout_ms: int = Field(default=3000, gt=0)
@@ -63,7 +66,7 @@ class DashboardSettings(BaseModel):
 
     # 9. SPATIAL / LiDAR
     lidar_enabled: bool = True
-    lidar_provider: str = "mock"
+    lidar_provider: str = "network"
     lidar_update_rate: int = 10
     lidar_min_range: float = 0.1
     lidar_max_range: float = 20.0
@@ -71,7 +74,7 @@ class DashboardSettings(BaseModel):
 
     # 10. MAVLink / TELEMETRY
     mavlink_enabled: bool = True
-    mavlink_provider: str = "mock"
+    mavlink_provider: str = "network"
     mavlink_connection_type: str = "udp"
     mavlink_connection_string: str = "udp:127.0.0.1:14550"
     mavlink_baud_rate: int = 115200

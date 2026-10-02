@@ -8,7 +8,7 @@ from app.rag.models import RAGResult, RetrievalMetadata
 from app.llm.config import LLMConfig
 from app.llm.models import LLMResponse
 from app.llm.prompts import build_prompt, SYSTEM_PROMPT
-from app.llm.mock_provider import MockLLMProvider
+from tests.mocks.mock_llm_provider import MockLLMProvider
 from app.llm.service import LLMService
 from app.database.repository import Repository
 
@@ -107,7 +107,8 @@ class TestStep19LLM(unittest.TestCase):
                 self.saved_report = report
                 
         repo = DummyRepo()
-        service = LLMService(config=LLMConfig(provider="mock"), repository=repo)
+        service = LLMService(config=LLMConfig(api_key="test"), repository=repo)
+        service.provider = MockLLMProvider(LLMConfig())
         
         report = service.generate_report(self.incident, self.retrieved_ctx)
         
@@ -119,7 +120,7 @@ class TestStep19LLM(unittest.TestCase):
         self.assertEqual(repo.saved_report, report)
 
     def test_provider_failure(self):
-        service = LLMService(config=LLMConfig(), repository=None)
+        service = LLMService(config=LLMConfig(api_key="test"), repository=None)
         service.provider = MockFailingProvider(LLMConfig())
         
         with self.assertRaises(RuntimeError) as context:

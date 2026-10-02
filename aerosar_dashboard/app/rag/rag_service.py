@@ -2,7 +2,6 @@ import logging
 from app.rag.config import RAGConfig
 from app.rag.documents import DocumentLoader
 from app.rag.chunker import Chunker
-from app.rag.embeddings import MockTFIDFEmbeddingProvider
 from app.rag.vector_store import LocalMemoryVectorStore
 from app.rag.query_builder import QueryBuilder
 from app.rag.retriever import Retriever
@@ -12,6 +11,8 @@ from app.models.incident import Incident
 logger = logging.getLogger(__name__)
 
 from typing import Optional
+
+from app.rag.embeddings import EmbeddingProvider, SentenceTransformerEmbeddingProvider
 
 class RAGService:
     """
@@ -28,7 +29,7 @@ class RAGService:
             chunk_size=self.config.chunk_size, 
             chunk_overlap=self.config.chunk_overlap
         )
-        self.embedding_provider = MockTFIDFEmbeddingProvider()
+        self.embedding_provider = SentenceTransformerEmbeddingProvider()
         self.vector_store = LocalMemoryVectorStore()
         self.query_builder = QueryBuilder()
         

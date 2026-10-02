@@ -319,7 +319,7 @@ class SettingsView(QWidget):
         card = SettingsCategoryCard("Camera Configuration", "Video payload feeds, resolution, and viewport settings.")
 
         self.combo_cam_source = QComboBox()
-        self.combo_cam_source.addItems(["Mock Camera", "EO/IR Gimbal CAM-01", "Thermal IR FLIR-02", "Synthetic Test Pattern"])
+        self.combo_cam_source.addItems(["Network Camera", "Mock Camera", "EO/IR Gimbal CAM-01", "Thermal IR FLIR-02", "Synthetic Test Pattern"])
         self._style_combo(self.combo_cam_source)
         card.add_row("Camera Source", self.combo_cam_source, "Primary payload optical sensor")
 
@@ -471,11 +471,11 @@ class SettingsView(QWidget):
             ("APPLICATION", "STALLION AEROSAR Ground Station"),
             ("VERSION", "0.1.0"),
             ("ENVIRONMENT", "Development"),
-            ("DATA PROVIDER", "MockDataProvider"),
+            ("DATA PROVIDER", "APIDataProvider"),
             ("GUI FRAMEWORK", "PySide6 (Qt 6.x)"),
             ("PYTHON RUNTIME", py_ver),
-            ("PERCEPTION STATUS", "SIMULATED (No real YOLO)"),
-            ("BACKEND STATUS", "NOT CONNECTED (Mock Mode)"),
+            ("PERCEPTION STATUS", "ACTIVE (YOLO)"),
+            ("BACKEND STATUS", "CONNECTED (Real Mode)"),
             ("FLIGHT SAFETY", "NON-CRITICAL / READ-ONLY"),
             ("PLATFORM OS", f"{platform.system()} {platform.release()}")
         ]

@@ -48,13 +48,13 @@ class FlightTelemetryPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.val_alt = self._add_item(grid, 0, 0, "ALTITUDE", "14.8 m", Theme.ACCENT)
-        self.val_spd = self._add_item(grid, 0, 1, "SPEED", "3.2 m/s", Theme.TEXT_PRIMARY)
-        self.val_vs = self._add_item(grid, 1, 0, "VERTICAL SPEED", "+0.4 m/s", Theme.TEXT_PRIMARY)
-        self.val_heading = self._add_item(grid, 1, 1, "HEADING", "127°", Theme.ACCENT)
-        self.val_roll = self._add_item(grid, 2, 0, "ROLL", "+0.8°", Theme.TEXT_SECONDARY)
-        self.val_pitch = self._add_item(grid, 2, 1, "PITCH", "-1.2°", Theme.TEXT_SECONDARY)
-        self.val_yaw = self._add_item(grid, 3, 0, "YAW", "127.0°", Theme.TEXT_SECONDARY)
+        self.val_alt = self._add_item(grid, 0, 0, "ALTITUDE", "N/A", Theme.ACCENT)
+        self.val_spd = self._add_item(grid, 0, 1, "SPEED", "N/A", Theme.TEXT_PRIMARY)
+        self.val_vs = self._add_item(grid, 1, 0, "VERTICAL SPEED", "N/A", Theme.TEXT_PRIMARY)
+        self.val_heading = self._add_item(grid, 1, 1, "HEADING", "N/A", Theme.ACCENT)
+        self.val_roll = self._add_item(grid, 2, 0, "ROLL", "N/A", Theme.TEXT_SECONDARY)
+        self.val_pitch = self._add_item(grid, 2, 1, "PITCH", "N/A", Theme.TEXT_SECONDARY)
+        self.val_yaw = self._add_item(grid, 3, 0, "YAW", "N/A", Theme.TEXT_SECONDARY)
 
         self.layout.addLayout(grid)
         self.layout.addStretch()
@@ -99,10 +99,10 @@ class PositionPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.val_x = self._add_item(grid, 0, 0, "X (LOCAL)", "12.4 m")
-        self.val_y = self._add_item(grid, 0, 1, "Y (LOCAL)", "8.7 m")
-        self.val_z = self._add_item(grid, 1, 0, "Z (ALTITUDE)", "14.8 m")
-        self.val_head = self._add_item(grid, 1, 1, "HEADING", "127°")
+        self.val_x = self._add_item(grid, 0, 0, "X (LOCAL)", "N/A")
+        self.val_y = self._add_item(grid, 0, 1, "Y (LOCAL)", "N/A")
+        self.val_z = self._add_item(grid, 1, 0, "Z (ALTITUDE)", "N/A")
+        self.val_head = self._add_item(grid, 1, 1, "HEADING", "N/A")
 
         self.layout.addLayout(grid)
 
@@ -159,7 +159,7 @@ class PowerPanel(BaseTelemetryPanel):
         top_row = QHBoxLayout()
         t_lbl = QLabel("BATTERY")
         t_lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-weight: bold;")
-        self.val_battery = QLabel("82%")
+        self.val_battery = QLabel("0%")
         self.val_battery.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 16px; font-weight: bold; font-family: monospace;")
         top_row.addWidget(t_lbl)
         top_row.addStretch()
@@ -169,8 +169,8 @@ class PowerPanel(BaseTelemetryPanel):
         self.bar_battery = QProgressBar()
         self.bar_battery.setFixedHeight(6)
         self.bar_battery.setTextVisible(False)
-        self.bar_battery.setValue(82)
-        self._apply_battery_bar_style(82)
+        self.bar_battery.setValue(0)
+        self._apply_battery_bar_style(0)
         self.layout.addWidget(self.bar_battery)
 
         # Metrics grid
@@ -178,10 +178,10 @@ class PowerPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.val_volts = self._add_item(grid, 0, 0, "VOLTAGE", "15.7 V")
-        self.val_amps = self._add_item(grid, 0, 1, "CURRENT", "8.4 A")
-        self.val_watts = self._add_item(grid, 1, 0, "POWER", "132 W")
-        self.val_status = self._add_item(grid, 1, 1, "STATUS", "GOOD", Theme.STATUS_SUCCESS)
+        self.val_volts = self._add_item(grid, 0, 0, "VOLTAGE", "N/A")
+        self.val_amps = self._add_item(grid, 0, 1, "CURRENT", "N/A")
+        self.val_watts = self._add_item(grid, 1, 0, "POWER", "N/A")
+        self.val_status = self._add_item(grid, 1, 1, "STATUS", "UNKNOWN", Theme.STATUS_SUCCESS)
 
         self.layout.addLayout(grid)
         self.layout.addStretch()
@@ -252,13 +252,13 @@ class CommunicationPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.val_link = self._add_item(grid, 0, 0, "LINK STATUS", "CONNECTED", Theme.STATUS_SUCCESS)
-        self.val_sig = self._add_item(grid, 0, 1, "SIGNAL", "87%", Theme.TEXT_PRIMARY)
-        self.val_lat = self._add_item(grid, 1, 0, "LATENCY", "38 ms", Theme.TEXT_PRIMARY)
-        self.val_hb = self._add_item(grid, 1, 1, "HEARTBEAT AGE", "0.0 s", Theme.STATUS_SUCCESS)
-        self.val_loss = self._add_item(grid, 2, 0, "PACKET LOSS", "0.2%", Theme.STATUS_SUCCESS)
-        self.val_up = self._add_item(grid, 2, 1, "UPLINK", "CONNECTED", Theme.TEXT_SECONDARY)
-        self.val_down = self._add_item(grid, 3, 0, "DOWNLINK", "CONNECTED", Theme.TEXT_SECONDARY)
+        self.val_link = self._add_item(grid, 0, 0, "LINK STATUS", "DISCONNECTED", Theme.STATUS_WARNING)
+        self.val_sig = self._add_item(grid, 0, 1, "SIGNAL", "0%", Theme.TEXT_PRIMARY)
+        self.val_lat = self._add_item(grid, 1, 0, "LATENCY", "0 ms", Theme.TEXT_PRIMARY)
+        self.val_hb = self._add_item(grid, 1, 1, "HEARTBEAT AGE", "N/A", Theme.STATUS_WARNING)
+        self.val_loss = self._add_item(grid, 2, 0, "PACKET LOSS", "0.0%", Theme.STATUS_WARNING)
+        self.val_up = self._add_item(grid, 2, 1, "UPLINK", "DISCONNECTED", Theme.TEXT_SECONDARY)
+        self.val_down = self._add_item(grid, 3, 0, "DOWNLINK", "DISCONNECTED", Theme.TEXT_SECONDARY)
 
         self.layout.addLayout(grid)
         self.layout.addStretch()
@@ -312,13 +312,13 @@ class SensorStatusPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.p_imu = self._add_sensor_pill(grid, 0, 0, "IMU", "READY", Theme.STATUS_SUCCESS)
-        self.p_baro = self._add_sensor_pill(grid, 0, 1, "BAROMETER", "READY", Theme.STATUS_SUCCESS)
-        self.p_cam = self._add_sensor_pill(grid, 0, 2, "CAMERA", "READY", Theme.STATUS_SUCCESS)
+        self.p_imu = self._add_sensor_pill(grid, 0, 0, "IMU", "UNKNOWN", Theme.TEXT_SECONDARY)
+        self.p_baro = self._add_sensor_pill(grid, 0, 1, "BAROMETER", "UNKNOWN", Theme.TEXT_SECONDARY)
+        self.p_cam = self._add_sensor_pill(grid, 0, 2, "CAMERA", "UNKNOWN", Theme.TEXT_SECONDARY)
 
-        self.p_lidar = self._add_sensor_pill(grid, 1, 0, "LIDAR", "STANDBY", Theme.TEXT_SECONDARY)
-        self.p_gps = self._add_sensor_pill(grid, 1, 1, "GPS", "NOT REQUIRED", Theme.ACCENT)
-        self.p_slam = self._add_sensor_pill(grid, 1, 2, "SLAM", "STANDBY", Theme.TEXT_SECONDARY)
+        self.p_lidar = self._add_sensor_pill(grid, 1, 0, "LIDAR", "UNKNOWN", Theme.TEXT_SECONDARY)
+        self.p_gps = self._add_sensor_pill(grid, 1, 1, "GPS", "UNKNOWN", Theme.TEXT_SECONDARY)
+        self.p_slam = self._add_sensor_pill(grid, 1, 2, "SLAM", "UNKNOWN", Theme.TEXT_SECONDARY)
 
         self.layout.addLayout(grid)
 
@@ -368,11 +368,11 @@ class FlightControllerPanel(BaseTelemetryPanel):
         grid.setSpacing(8)
         grid.setHorizontalSpacing(16)
 
-        self.val_fc_st = self._add_item(grid, 0, 0, "STATUS", "CONNECTED", Theme.STATUS_SUCCESS)
-        self.val_auto = self._add_item(grid, 0, 1, "AUTOPILOT", "ARDUPILOT")
-        self.val_mode = self._add_item(grid, 1, 0, "MODE", "GUIDED", Theme.ACCENT)
-        self.val_armed = self._add_item(grid, 1, 1, "ARMED", "NO", Theme.TEXT_SECONDARY)
-        self.val_link = self._add_item(grid, 2, 0, "MAVLINK", "CONNECTED", Theme.STATUS_SUCCESS)
+        self.val_fc_st = self._add_item(grid, 0, 0, "STATUS", "DISCONNECTED", Theme.STATUS_WARNING)
+        self.val_auto = self._add_item(grid, 0, 1, "AUTOPILOT", "N/A")
+        self.val_mode = self._add_item(grid, 1, 0, "MODE", "N/A", Theme.ACCENT)
+        self.val_armed = self._add_item(grid, 1, 1, "ARMED", "N/A", Theme.TEXT_SECONDARY)
+        self.val_link = self._add_item(grid, 2, 0, "MAVLINK", "DISCONNECTED", Theme.STATUS_WARNING)
 
         self.layout.addLayout(grid)
 

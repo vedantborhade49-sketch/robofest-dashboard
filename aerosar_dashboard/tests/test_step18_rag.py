@@ -3,7 +3,7 @@ from datetime import datetime
 from app.rag.models import Document, Chunk
 from app.rag.documents import DocumentLoader
 from app.rag.chunker import Chunker
-from app.rag.embeddings import MockTFIDFEmbeddingProvider
+from tests.mocks.mock_embeddings import MockTFIDFEmbeddingProvider
 from app.rag.vector_store import LocalMemoryVectorStore
 from app.rag.query_builder import QueryBuilder
 from app.rag.rag_service import RAGService
@@ -80,7 +80,10 @@ def test_query_builder():
     assert "person detected" in query
     assert "low confidence" in query
 
-def test_rag_service(tmp_path):
+from unittest.mock import patch
+
+@patch('app.rag.rag_service.SentenceTransformerEmbeddingProvider')
+def test_rag_service(mock_real_provider, tmp_path):
     kb_path = tmp_path / "knowledge_base"
     rescue_dir = kb_path / "rescue"
     rescue_dir.mkdir(parents=True)
@@ -89,6 +92,11 @@ def test_rag_service(tmp_path):
     (rescue_dir / "drone.md").write_text("Drone maintenance and telemetry.")
     
     config = RAGConfig(knowledge_base_path=str(kb_path))
+    
+    # We replace the real provider creation with our Mock provider
+    mock_provider = MockTFIDFEmbeddingProvider()
+    mock_real_provider.return_value = mock_provider
+    
     service = RAGService(config)
     
     service.index_knowledge_base()

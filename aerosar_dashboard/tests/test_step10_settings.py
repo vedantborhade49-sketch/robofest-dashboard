@@ -147,6 +147,7 @@ class TestStep10Settings(unittest.TestCase):
         self.assertIn("Backend URL cannot be empty", view.banner_label.text())
 
     def test_navigation_and_regression(self):
+        os.environ["DATA_MODE"] = "mock"
         win = MainWindow()
         win.show()
 

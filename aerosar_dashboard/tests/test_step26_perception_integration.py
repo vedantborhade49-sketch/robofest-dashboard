@@ -7,7 +7,7 @@ from app.onboard.adapters import PerceptionAdapterService
 from app.onboard.communication import CommunicationService
 from app.onboard.buffer import OnboardEventBuffer
 from app.services.incident_engine import IncidentEngine
-from app.perception.camera import MockCameraSource
+from tests.mocks.mock_camera import MockCameraSource
 
 class TestStep26PerceptionIntegration(unittest.TestCase):
     def setUp(self):
@@ -23,13 +23,28 @@ class TestStep26PerceptionIntegration(unittest.TestCase):
         
         self.incident_engine = IncidentEngine()
         
-    def test_camera_provider_initialization(self):
+    @patch.object(PerceptionAdapterService, '_create_source')
+    def test_camera_provider_initialization(self, mock_create):
+        mock_source = MockCameraSource()
+        mock_create.return_value = mock_source
+        
         adapter = PerceptionAdapterService(self.config, self.comms, self.incident_engine)
         self.assertTrue(adapter.initialize())
         self.assertIsInstance(adapter.source, MockCameraSource)
         self.assertEqual(adapter.get_status(), "INITIALIZED")
 
-    def test_perception_throttling_and_fps(self):
+    @patch('app.perception.perception_service.PerceptionService.process_single_frame')
+    @patch.object(PerceptionAdapterService, '_create_source')
+    def test_perception_throttling_and_fps(self, mock_create, mock_process):
+        mock_source = MockCameraSource()
+        mock_create.return_value = mock_source
+        
+        # Make the mock process return fast so inference loop completes iterations
+        def mock_process_impl(frame):
+            time.sleep(0.01)
+            return ([], None)
+        mock_process.side_effect = mock_process_impl
+        
         adapter = PerceptionAdapterService(self.config, self.comms, self.incident_engine)
         adapter.initialize()
         
@@ -58,7 +73,11 @@ class TestStep26PerceptionIntegration(unittest.TestCase):
         self.assertEqual(adapter.get_status(), "STOPPED")
 
     @patch('app.perception.perception_service.PerceptionService.process_single_frame')
-    def test_incident_generation_and_sync(self, mock_process):
+    @patch.object(PerceptionAdapterService, '_create_source')
+    def test_incident_generation_and_sync(self, mock_create, mock_process):
+        mock_source = MockCameraSource()
+        mock_create.return_value = mock_source
+        
         # Mock the perception service to return a dummy detection
         from app.models.detection import Detection, BoundingBox
         from datetime import datetime

@@ -69,13 +69,13 @@ class MainWindow(QMainWindow):
         import os
         from app.services.data_service import DataService
         
-        data_mode = os.environ.get("DATA_MODE", "mock").lower()
-        if data_mode == "live":
+        data_mode = os.environ.get("DATA_MODE", "live").lower()
+        if data_mode == "mock":
+            from tests.mocks.mock_provider import MockDataProvider
+            provider = MockDataProvider()
+        else:
             from app.data.api_provider import APIDataProvider
             provider = APIDataProvider()
-        else:
-            from app.data.mock_provider import MockDataProvider
-            provider = MockDataProvider()
             
         self.data_service = DataService(provider)
         self.data_service.realtime_status_updated.connect(self.header.set_realtime_status)

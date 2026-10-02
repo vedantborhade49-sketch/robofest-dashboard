@@ -17,9 +17,25 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(na
 logger = logging.getLogger(__name__)
 
 def run_simulation():
-    """Runs both Ground Station and Mock Onboard in the same process/machine."""
+    """Runs Ground Station, Dashboard, and OnboardRuntime in the same process/machine."""
     logger.info("Starting SIMULATION mode...")
+    
+    # Start Pi Onboard code first so FrameSender listens
+    config = OnboardConfig(runtime_mode="LAPTOP", camera_provider="mock")
+    runtime = OnboardRuntime(config=config)
+    runtime.start()
+    
     integration = IntegrationService(mode="SIMULATION")
+    
+    # Register services to satisfy the coordinator's startup sequence
+    services_to_register = [
+        "database", "state", "communication", "mavlink",
+        "camera", "lidar", "slam", "yolo", "incident_engine",
+        "rag", "llm"
+    ]
+    for svc in services_to_register:
+        integration.register_service(svc, "registered_mock")
+        
     integration.startup_sequence()
     
     def start_backend():
@@ -44,6 +60,7 @@ def run_simulation():
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        runtime.stop()
         integration.shutdown()
 
 

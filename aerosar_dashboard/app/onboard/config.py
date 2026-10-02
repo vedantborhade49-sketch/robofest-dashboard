@@ -6,12 +6,13 @@ class OnboardConfig(BaseModel):
     runtime_mode: Literal["development", "onboard", "LAPTOP", "PI"] = "development"
     
     # Providers
-    camera_provider: Literal["mock", "webcam", "video", "pi"] = "mock"
+    camera_provider: Literal["mock", "webcam", "video", "pi"] = "webcam"
     video_file_path: str = "assets/test_video.mp4"
     camera_index: int = 0
-    lidar_provider: Literal["mock", "real"] = "mock"
-    slam_provider: Literal["mock", "real"] = "mock"
-    mavlink_provider: Literal["mock", "real"] = "mock"
+    lidar_provider: Literal["mock", "real"] = "real"
+    slam_provider: Literal["mock", "real"] = "real"
+    mavlink_provider: Literal["mock", "real"] = "real"
+    mavlink_connection_string: str = "udp:127.0.0.1:14550"
     
     # Communication
     communication_enabled: bool = True
@@ -65,7 +66,10 @@ class OnboardConfig(BaseModel):
         # This allows injecting config without hardcoding
         return cls(
             runtime_mode=os.getenv("AEROSAR_RUNTIME_MODE", "PI"),
-            camera_provider=os.getenv("AEROSAR_CAMERA_PROVIDER", "mock"),
+            camera_provider=os.getenv("AEROSAR_CAMERA_PROVIDER", "webcam"),
+            lidar_provider=os.getenv("AEROSAR_LIDAR_PROVIDER", "real"),
+            slam_provider=os.getenv("AEROSAR_SLAM_PROVIDER", "real"),
+            mavlink_provider=os.getenv("AEROSAR_MAVLINK_PROVIDER", "real"),
             ground_station_url=os.getenv("AEROSAR_GROUND_URL", "http://127.0.0.1:8000"),
             ground_station_ws_url=os.getenv("AEROSAR_GROUND_WS", "ws://127.0.0.1:8000/api/v1/uav/ws"),
             yolo_model_path=os.getenv("AEROSAR_YOLO_MODEL", "models/best.pt"),

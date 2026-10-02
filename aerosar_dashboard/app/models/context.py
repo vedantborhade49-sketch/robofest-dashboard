@@ -9,3 +9,6 @@ class RetrievedContext(BaseModel):
     source_type: str
     content: str
     relevance_score: float
+    document_title: str = ""
+    section: str = ""
+    retrieved_chunk: str = ""

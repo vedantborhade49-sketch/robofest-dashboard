@@ -3,7 +3,8 @@ from datetime import datetime
 from PySide6.QtCore import QObject, Signal
 
 from app.data.provider import DataProvider
-from app.data.mock_provider import MockDataProvider
+from app.data.api_provider import APIDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.models.incident import Incident
 from app.models.event import Event
 from app.models.report import Report
@@ -56,7 +57,7 @@ class DataService(QObject):
             return
 
         super().__init__()
-        self._provider: DataProvider = provider or MockDataProvider()
+        self._provider: DataProvider = provider or APIDataProvider()
         self._state_manager = StateManager.instance()
         self._state_manager.initialize_from_provider(self._provider)
 
@@ -131,14 +132,33 @@ class DataService(QObject):
         self._state_manager.spatial_updated.connect(self.spatial_updated.emit)
 
         # Spatial Service
-        from app.spatial.provider import MockLiDARProvider
-        from app.spatial.slam_provider import MockSLAMProvider
+        from app.spatial.provider import LiDARProvider
+        from app.spatial.slam_provider import SLAMProvider
         from app.spatial.service import SpatialService
+        
+        class StubLiDAR(LiDARProvider):
+            def start(self): raise NotImplementedError("HARDWARE NOT AVAILABLE: LiDAR")
+            def stop(self): pass
+            def get_scan(self): return None
+            def is_connected(self): return False
+            
+        class StubSLAM(SLAMProvider):
+            def start(self): raise NotImplementedError("HARDWARE NOT AVAILABLE: SLAM")
+            def stop(self): pass
+            def update(self, scan): pass
+            def get_pose(self): return None
+            def get_map(self): return None
+            def get_trajectory(self): return []
+            def is_initialized(self): return False
+            def get_status(self): return "OFFLINE"
+            def get_quality(self): return "UNKNOWN"
+            def reset(self): pass
+
         self.spatial_service = SpatialService(
-            provider=MockLiDARProvider(),
-            slam_provider=MockSLAMProvider()
+            provider=StubLiDAR(),
+            slam_provider=StubSLAM()
         )
-        self.spatial_service.start()
+        # self.spatial_service.start()  # Do not start stub
 
         # Central update loop (500ms heartbeat)
         self._update_loop = CentralUpdateLoop(
@@ -397,6 +417,10 @@ class DataService(QObject):
         Adds a new incident. Automatically propagates to StateManager (triggering
         linked event and report generation) and synchronizes with provider.
         """
+        from app.data.api_provider import APIDataProvider
+        if isinstance(self._provider, APIDataProvider):
+            auto_create_event_and_report = False
+            
         if hasattr(self._provider, "add_incident"):
             self._provider.add_incident(incident)
         self._state_manager.add_incident(incident, auto_create_event_and_report=auto_create_event_and_report)

@@ -51,7 +51,10 @@ class Retriever:
                 source_id=chunk.chunk_id,
                 source_type="Knowledge Base Document",
                 content=chunk.text,
-                relevance_score=round(score, 4)
+                relevance_score=round(score, 4),
+                document_title=chunk.metadata.get("title", ""),
+                section=chunk.metadata.get("category", ""),
+                retrieved_chunk=chunk.text
             )
             retrieved_contexts.append(ctx)
             

@@ -3,7 +3,7 @@ import logging
 from PySide6.QtCore import QThread, Signal
 
 from app.telemetry.service import TelemetryService
-from app.telemetry.provider import MockMAVLinkProvider, RealMAVLinkProvider
+from app.telemetry.provider import RealMAVLinkProvider
 from app.models.settings import DashboardSettings
 from app.core.state_manager import StateManager
 from app.realtime.event_bus import event_bus
@@ -24,12 +24,12 @@ class TelemetryWorker(QThread):
             # We can use new settings fields: mavlink_provider, mavlink_connection_string
             provider_type = getattr(self.settings, "mavlink_provider", "mock").lower()
             
-            if provider_type == "real":
+            if provider_type in ["real", "network"]:
                 conn_str = getattr(self.settings, "mavlink_connection_string", "udp:127.0.0.1:14550")
                 baud = getattr(self.settings, "mavlink_baud_rate", 115200)
                 provider = RealMAVLinkProvider(connection_string=conn_str, baud_rate=baud)
             else:
-                provider = MockMAVLinkProvider()
+                raise NotImplementedError("PROVIDER NOT IMPLEMENTED: MAVLink provider must be explicitly selected as 'real' or 'network'.")
                 
             self.service = TelemetryService(provider)
         except Exception as e:

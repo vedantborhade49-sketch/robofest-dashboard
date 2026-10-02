@@ -97,27 +97,81 @@ class PiCameraSource(OpenCVVideoSource):
             return True
         return False
 
-class MockCameraSource(VideoSource):
-    """Produces generated frames for deterministic testing without hardware."""
+
+class MockVideoSource(VideoSource):
     def __init__(self, width: int = 640, height: int = 480):
         self.width = width
         self.height = height
         self._is_open = False
-        
+        import time
+        self._start_time = time.time()
+
     def open(self):
         self._is_open = True
         return True
-        
+
     def read(self):
+        import time
         if not self._is_open:
             return None
-        # Return a black frame or one with some text
-        frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        cv2.putText(frame, "MOCK CAMERA", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        return frame
         
+        # Generate a simple synthetic frame with moving pattern
+        frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        # Add a moving gradient based on time
+        t = time.time() - self._start_time
+        offset = int((t * 50) % self.width)
+        
+        frame[:, offset:offset+100, 1] = 200  # Green vertical bar
+        
+        cv2.putText(frame, f"AEROSAR MOCK CAMERA: {t:.1f}s", (20, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        
+        # Simulate ~30 FPS
+        time.sleep(1/30.0)
+        return frame
+
     def is_open(self) -> bool:
         return self._is_open
-        
+
     def release(self):
         self._is_open = False
+
+
+class NetworkCameraProvider(VideoSource):
+    """
+    Connects to a remote camera stream via the binary AEROSAR Frame Protocol.
+    """
+    def __init__(self, host: str, port: int, reconnect_delay: float = 2.0):
+        from app.communication.frame_receiver import FrameReceiver
+        self.host = host
+        self.port = port
+        self.source = f"tcp://{host}:{port}"
+        self.receiver = FrameReceiver(host, port, reconnect_delay)
+        
+    def open(self):
+        self.receiver.start()
+        return True
+        
+    def read(self):
+        import time
+        # Provide blocking behavior (up to a timeout) similar to OpenCV
+        # This prevents 100% CPU spin-loops in the perception worker when waiting for a frame.
+        timeout = 1.0
+        start = time.time()
+        while time.time() - start < timeout:
+            with self.receiver._lock:
+                frame = self.receiver._latest_frame
+                if frame is not None:
+                    self.receiver._latest_frame = None  # Consume frame
+                    return frame
+            time.sleep(0.01)
+        return None
+
+    def is_open(self) -> bool:
+        from app.communication.frame_receiver import ConnectionState
+        return self.receiver._running and self.receiver.state == ConnectionState.CONNECTED
+        
+    def release(self):
+        self.receiver.stop()
+

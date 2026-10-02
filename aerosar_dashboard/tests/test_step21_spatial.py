@@ -28,7 +28,7 @@ def test_lidar_adapter_normalizes_data():
     assert math.isclose(scan.points[1].y, 2.0, abs_tol=1e-5)
 
 def test_spatial_service_extracts_clustering_correctly():
-    from app.spatial.provider import MockLiDARProvider
+    from tests.mocks.mock_lidar_provider import MockLiDARProvider
     service = SpatialService(provider=MockLiDARProvider())
     
     # Inject a scan with two clusters of points

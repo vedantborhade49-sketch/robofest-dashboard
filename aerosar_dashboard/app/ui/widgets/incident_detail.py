@@ -9,7 +9,7 @@ from app.models.incident import Incident
 
 class EvidenceFrameWidget(QFrame):
     """
-    Renders an operational simulated evidence snapshot from drone optical/thermal payload,
+    Renders an operational evidence snapshot from drone optical/thermal payload,
     complete with AI detection bounding box, targeting reticle, and telemetry annotations.
     """
     def __init__(self):
@@ -276,7 +276,7 @@ class IncidentDetail(QFrame):
             coords_layout.addWidget(lbl)
         coords_layout.addStretch()
 
-        self.loc_note = QLabel("Derived from LiDAR + SLAM sensor fusion (mock)")
+        self.loc_note = QLabel("Derived from LiDAR + SLAM sensor fusion")
         self.loc_note.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-style: italic;")
         coords_layout.addWidget(self.loc_note)
 
@@ -496,7 +496,7 @@ class IncidentDetail(QFrame):
             return
         inc = self._current_incident
         self.banner_text.setText(
-            f"⚡ REPORT GENERATION — AI REPORTING MODULE NOT CONNECTED | Context for {inc.incident_id} queued for RAG pipeline."
+            f"⚡ REPORT GENERATION | Context for {inc.incident_id} queued for RAG pipeline."
         )
         self.action_banner.show()
         self.generate_report_requested.emit(inc)

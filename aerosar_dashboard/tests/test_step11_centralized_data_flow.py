@@ -13,7 +13,7 @@ from app.models.telemetry import TelemetryState
 from app.core.state_manager import StateManager
 from app.core.update_loop import CentralUpdateLoop
 from app.services.data_service import DataService
-from app.data.mock_provider import MockDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.ui.main_window import MainWindow
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -126,6 +126,7 @@ class TestStep11CentralizedDataFlow(unittest.TestCase):
         self.assertFalse(self.state_mgr.get_state().is_stale)
 
     def test_full_dashboard_navigation_and_views_integrity(self):
+        os.environ["DATA_MODE"] = "mock"
         win = MainWindow()
         win.show()
 

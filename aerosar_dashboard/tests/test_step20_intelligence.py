@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 from app.models.incident import Incident, Location
 from app.intelligence.service import IntelligenceService
 from app.llm.config import LLMConfig
-from app.llm.mock_provider import MockLLMProvider
+from tests.mocks.mock_llm_provider import MockLLMProvider
 from app.llm.cloud_provider import CloudLLMProvider
 from app.llm.service import LLMService
 from app.rag.rag_service import RAGService
@@ -25,11 +25,20 @@ class TestStep20Intelligence(unittest.IsolatedAsyncioTestCase):
             status="NEW"
         )
         # Force mock provider
-        self.config = LLMConfig(provider="mock")
+        self.config = LLMConfig(api_key="test", model_name="mock-rag-llm")
         
-    async def test_intelligence_pipeline_mock(self):
+    @patch('app.rag.rag_service.SentenceTransformerEmbeddingProvider')
+    async def test_intelligence_pipeline_mock(self, mock_real_provider):
+        from tests.mocks.mock_embeddings import MockTFIDFEmbeddingProvider
+        mock_provider = MockTFIDFEmbeddingProvider()
+        mock_real_provider.return_value = mock_provider
+        
         rag = RAGService()
+        rag.embedding_provider = mock_provider
+        rag.retriever.embedding_provider = mock_provider
+        
         llm = LLMService(config=self.config)
+        llm.provider = MockLLMProvider(self.config)
         intelligence = IntelligenceService(rag_service=rag, llm_service=llm)
         
         # Test full flow: Incident -> RAG -> LLM -> Report

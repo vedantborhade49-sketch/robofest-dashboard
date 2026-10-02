@@ -194,6 +194,9 @@ class RetrievedContextRequest(BaseModel):
     source_type: str
     content: str
     relevance_score: float
+    document_title: str = ""
+    section: str = ""
+    retrieved_chunk: str = ""
 
     def to_context(self) -> RetrievedContext:
         return RetrievedContext(
@@ -201,6 +204,9 @@ class RetrievedContextRequest(BaseModel):
             source_type=self.source_type,
             content=self.content,
             relevance_score=self.relevance_score,
+            document_title=self.document_title,
+            section=self.section,
+            retrieved_chunk=self.retrieved_chunk,
         )
 
 
@@ -209,6 +215,9 @@ class RetrievedContextResponse(BaseModel):
     source_type: str
     content: str
     relevance_score: float
+    document_title: str = ""
+    section: str = ""
+    retrieved_chunk: str = ""
 
     def to_context(self) -> RetrievedContext:
         return RetrievedContext(
@@ -216,6 +225,9 @@ class RetrievedContextResponse(BaseModel):
             source_type=self.source_type,
             content=self.content,
             relevance_score=self.relevance_score,
+            document_title=self.document_title,
+            section=self.section,
+            retrieved_chunk=self.retrieved_chunk,
         )
 
 

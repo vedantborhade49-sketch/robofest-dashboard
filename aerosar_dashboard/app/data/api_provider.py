@@ -153,8 +153,15 @@ class APIDataProvider(DataProvider):
         pass
 
     def add_incident(self, incident: Incident):
-        # Already pushed to backend by operator actions via REST if needed.
-        pass
+        try:
+            self.client.post(
+                f"{self.base_url}/incidents",
+                json=incident.model_dump(mode="json")
+            )
+            # Request report generation immediately after creation
+            self.client.post(f"{self.base_url}/incidents/{incident.incident_id}/generate-report")
+        except Exception as e:
+            logger.error(f"Failed to push new incident to backend: {e}")
 
     def update_incident(self, incident: Incident):
         try:

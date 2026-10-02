@@ -39,10 +39,18 @@ class OnboardRuntime:
         """Registers all onboard services with the ServiceManager."""
         self.service_manager.register_service("communication", self.communication)
         
-        # Domain core engines
+        from app.spatial.provider import RealLiDARProvider
+        from app.spatial.slam_provider import RealSLAMProvider
+        from app.telemetry.provider import RealMAVLinkProvider
+
         self.incident_engine = IncidentEngine()
-        self.spatial_core = SpatialService()
-        self.telemetry_core = TelemetryService()
+        self.spatial_core = SpatialService(
+            provider=RealLiDARProvider(),
+            slam_provider=RealSLAMProvider()
+        )
+        self.telemetry_core = TelemetryService(
+            provider=RealMAVLinkProvider(connection_string=self.config.mavlink_connection_string)
+        )
         
         # Headless Adapters for Pi
         self.perception_adapter = PerceptionAdapterService(

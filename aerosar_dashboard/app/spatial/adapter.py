@@ -11,7 +11,7 @@ class LiDARAdapter:
         if not raw_data:
             return None
             
-        # Expecting raw_data as a dictionary from MockLiDARProvider
+        # Expecting raw_data as a dictionary from a LiDARProvider
         # (A real hardware driver would have its own specific raw structure here)
         try:
             points = []

@@ -74,8 +74,20 @@ class PerceptionService:
         if self.source is None:
             self.status.error = "No video source configured"
             return [], None
+            
+        # Update network metrics if using NetworkCameraProvider
+        if hasattr(self.source, 'receiver'):
+            self.status.received_fps = getattr(self.source.receiver, 'received_fps', 0.0)
+            self.status.dropped_frames = getattr(self.source.receiver, 'dropped_frames', 0)
+            self.status.connection_state = getattr(self.source.receiver, 'state', "DISCONNECTED")
+            
         frame = self.source.read()
         if frame is None:
             self.status.error = "Frame read failed"
+            # Update camera_connected to match connection state if applicable
+            if hasattr(self.source, 'receiver'):
+                self.status.camera_connected = (self.status.connection_state == "CONNECTED")
             return [], None
+            
+        self.status.camera_connected = True
         return self.process_single_frame(frame)

@@ -14,7 +14,7 @@ from .overview_panels import BasePanel
 
 class CameraPanel(QFrame):
     """
-    Mock camera viewport.
+    Camera viewport.
     In the future, this class will receive a QPixmap/QImage from an OpenCV thread
     and draw it inside paintEvent, followed by drawing the bounding boxes over it.
     """
@@ -30,7 +30,7 @@ class CameraPanel(QFrame):
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        self.lbl_main = QLabel("CAMERA FEED\n[ MOCK VIDEO STREAM ]")
+        self.lbl_main = QLabel("CAMERA FEED\n[ WAITING FOR STREAM ]")
         self.lbl_main.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 20px; font-weight: bold; border: none;")
         self.lbl_main.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.lbl_main)
@@ -132,6 +132,9 @@ class AIPerceptionPanel(BasePanel):
         self.model_lbl = self._create_value_label("-")
         self.status_lbl = self._create_value_label("-", Theme.STATUS_SUCCESS)
         self.fps_lbl = self._create_value_label("0 FPS")
+        self.recv_fps_lbl = self._create_value_label("0 FPS")
+        self.drops_lbl = self._create_value_label("0")
+        self.conn_state_lbl = self._create_value_label("DISCONNECTED", Theme.STATUS_WARNING)
         self.det_count_lbl = self._create_value_label("0")
         self.device_lbl = self._create_value_label("-")
         
@@ -139,12 +142,21 @@ class AIPerceptionPanel(BasePanel):
         grid.addWidget(self.model_lbl, 1, 0)
         grid.addWidget(self._create_header_label("STATUS"), 2, 0)
         grid.addWidget(self.status_lbl, 3, 0)
+        
+        grid.addWidget(self._create_header_label("CONN STATE"), 0, 1)
+        grid.addWidget(self.conn_state_lbl, 1, 1)
+        grid.addWidget(self._create_header_label("RECV FPS"), 2, 1)
+        grid.addWidget(self.recv_fps_lbl, 3, 1)
+        
         grid.addWidget(self._create_header_label("INFERENCE FPS"), 4, 0)
         grid.addWidget(self.fps_lbl, 5, 0)
         grid.addWidget(self._create_header_label("DETECTIONS"), 6, 0)
         grid.addWidget(self.det_count_lbl, 7, 0)
-        grid.addWidget(self._create_header_label("DEVICE"), 8, 0)
-        grid.addWidget(self.device_lbl, 9, 0)
+        
+        grid.addWidget(self._create_header_label("DROPS"), 4, 1)
+        grid.addWidget(self.drops_lbl, 5, 1)
+        grid.addWidget(self._create_header_label("DEVICE"), 6, 1)
+        grid.addWidget(self.device_lbl, 7, 1)
         
         self.layout.addStretch()
         
@@ -188,6 +200,9 @@ class AIPerceptionPanel(BasePanel):
             det_count = getattr(ai, "detection_count", 0)
 
         device = getattr(ai, "device", "-")
+        recv_fps = getattr(ai, "received_fps", 0.0)
+        drops = getattr(ai, "dropped_frames", 0)
+        conn_state = getattr(ai, "connection_state", "UNKNOWN")
 
         self.model_lbl.setText(model_name)
         self.status_lbl.setText(status_text)
@@ -195,6 +210,22 @@ class AIPerceptionPanel(BasePanel):
             self.fps_lbl.setText(f"{float(fps):.1f} FPS")
         except Exception:
             self.fps_lbl.setText("0.0 FPS")
+            
+        try:
+            self.recv_fps_lbl.setText(f"{float(recv_fps):.1f} FPS")
+        except Exception:
+            self.recv_fps_lbl.setText("0.0 FPS")
+            
+        self.drops_lbl.setText(str(drops))
+        self.conn_state_lbl.setText(conn_state)
+        
+        if conn_state == "CONNECTED":
+            self.conn_state_lbl.setStyleSheet(f"color: {Theme.STATUS_SUCCESS}; font-size: 14px; font-weight: bold; border: none;")
+        elif conn_state == "DISCONNECTED" or conn_state == "ERROR":
+            self.conn_state_lbl.setStyleSheet(f"color: {Theme.STATUS_ERROR}; font-size: 14px; font-weight: bold; border: none;")
+        else:
+            self.conn_state_lbl.setStyleSheet(f"color: {Theme.STATUS_WARNING}; font-size: 14px; font-weight: bold; border: none;")
+
         self.det_count_lbl.setText(str(det_count))
         self.device_lbl.setText(device)
 

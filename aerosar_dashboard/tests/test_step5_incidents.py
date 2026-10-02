@@ -12,7 +12,7 @@ from app.models.detection import Detection, BoundingBox
 from app.models.incident import Incident, Location
 from app.services.incident_engine import IncidentEngine
 from app.services.data_service import DataService
-from app.data.mock_provider import MockDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.ui.widgets.incident_list import IncidentList
 from app.ui.widgets.incident_detail import IncidentDetail
 from app.ui.views.incidents_view import IncidentsView
@@ -123,6 +123,7 @@ class TestStep5Incidents(unittest.TestCase):
     def test_incidents_view_counters_and_actions(self):
         # We need to refresh or clear to ensure predictable tests
         DataService._instance = None
+        ds = DataService(provider=MockDataProvider())
         
         view = IncidentsView()
         current_incidents = view.data_service.get_incidents()

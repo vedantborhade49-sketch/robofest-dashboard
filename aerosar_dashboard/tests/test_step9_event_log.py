@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.models.event import Event
-from app.data.mock_provider import MockDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.services.data_service import DataService
 from app.ui.widgets.event_table import EventTableWidget
 from app.ui.widgets.event_detail_panel import EventDetailPanel
@@ -173,6 +173,7 @@ class TestStep9EventLog(unittest.TestCase):
         self.assertEqual(view.event_table.rowCount(), len(view.all_events))
 
     def test_navigation_and_regression(self):
+        os.environ["DATA_MODE"] = "mock"
         win = MainWindow()
         win.show()
 
@@ -193,6 +194,9 @@ class TestStep9EventLog(unittest.TestCase):
             win.sidebar.set_active_page(idx)
             win._on_page_changed(idx, name)
             self.assertEqual(win.stacked_widget.currentIndex(), idx)
+
+        win.close()
+        app.processEvents()
 
 if __name__ == "__main__":
     unittest.main()

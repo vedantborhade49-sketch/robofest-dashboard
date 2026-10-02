@@ -133,60 +133,86 @@ class BackendService:
         return events
 
     def get_telemetry(self) -> Dict[str, float]:
-        from app.data.mock_provider import MockDataProvider
-        provider = MockDataProvider()
-        telemetry = provider.get_telemetry_state()
+        from app.core.state_manager import StateManager
+        state = StateManager.instance().get_telemetry()
+        if not state:
+            return {"altitude": 0.0, "speed": 0.0, "battery": 0.0, "heading": 0.0, "signal": 0.0}
         return {
-            "altitude": telemetry.flight.altitude,
-            "speed": telemetry.flight.speed,
-            "battery": telemetry.power.battery_percent,
-            "heading": telemetry.flight.heading,
-            "signal": telemetry.communication.signal_percent,
+            "altitude": state.flight.altitude,
+            "speed": state.flight.speed,
+            "battery": state.power.battery_percent,
+            "heading": state.flight.heading,
+            "signal": state.communication.signal_percent,
         }
 
     def get_drone_status(self) -> Dict[str, Any]:
-        from app.data.mock_provider import MockDataProvider
-        provider = MockDataProvider()
-        drone = provider.get_drone()
+        from app.core.state_manager import StateManager
+        state = StateManager.instance().get_drone()
+        if not state:
+            return {
+                "drone_id": "N/A",
+                "connection": "DISCONNECTED",
+                "flight_state": "UNKNOWN",
+                "battery": 0.0,
+                "altitude": 0.0,
+            }
         return {
-            "drone_id": drone.drone_id,
-            "connection": "SIMULATED",
-            "flight_state": drone.status,
-            "battery": drone.battery,
-            "altitude": drone.altitude,
+            "drone_id": state.drone_id,
+            "connection": "CONNECTED" if state.status != "DISCONNECTED" else "DISCONNECTED",
+            "flight_state": state.status,
+            "battery": state.battery,
+            "altitude": state.altitude,
         }
 
     def get_camera_status(self) -> Dict[str, Any]:
-        from app.data.mock_provider import MockDataProvider
-        provider = MockDataProvider()
-        camera = provider.get_camera()
+        from app.core.state_manager import StateManager
+        state = StateManager.instance().get_camera()
+        if not state:
+            return {
+                "camera_id": "CAM-01",
+                "status": "DISCONNECTED",
+                "fps": 0.0,
+                "resolution": "N/A",
+            }
         return {
             "camera_id": "CAM-01",
-            "status": "SIMULATED",
-            "fps": round(camera.fps, 1),
-            "resolution": camera.resolution,
+            "status": "CONNECTED" if state.connected else "DISCONNECTED",
+            "fps": round(state.fps, 1),
+            "resolution": state.resolution,
         }
 
     def get_ai_status(self) -> Dict[str, Any]:
-        from app.data.mock_provider import MockDataProvider
-        provider = MockDataProvider()
-        ai = provider.get_ai_status()
+        from app.core.state_manager import StateManager
+        state = StateManager.instance().get_ai()
+        if not state:
+            return {
+                "model": "N/A",
+                "status": "WAITING",
+                "inference_fps": 0.0,
+                "latency_ms": 0.0,
+            }
         return {
-            "model": ai.model_name,
-            "status": ai.status,
-            "inference_fps": round(ai.inference_fps, 1),
-            "latency_ms": 54.2,
+            "model": state.model_name,
+            "status": state.status,
+            "inference_fps": round(state.inference_fps, 1),
+            "latency_ms": getattr(state, "inference_time_ms", 0.0),
         }
 
     def get_drone_position(self) -> Dict[str, float]:
-        from app.data.mock_provider import MockDataProvider
-        provider = MockDataProvider()
-        telemetry = provider.get_telemetry_state()
+        from app.core.state_manager import StateManager
+        state = StateManager.instance().get_telemetry()
+        if not state or not state.position:
+            return {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "heading": 0.0,
+            }
         return {
-            "x": telemetry.position.x,
-            "y": telemetry.position.y,
-            "z": telemetry.position.z,
-            "heading": telemetry.position.heading,
+            "x": state.position.x,
+            "y": state.position.y,
+            "z": state.position.z,
+            "heading": state.position.heading,
         }
 
     def get_database_status(self) -> str:

@@ -13,7 +13,7 @@ from app.models.telemetry import (
     FlightControllerStatus, CompanionComputerStatus, TelemetryHistoryPoint
 )
 from app.services.data_service import DataService
-from app.data.mock_provider import MockDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.ui.widgets.telemetry_panels import (
     FlightTelemetryPanel, PositionPanel, PowerPanel,
     CommunicationPanel, SensorStatusPanel, FlightControllerPanel,
@@ -142,6 +142,7 @@ class TestStep7Telemetry(unittest.TestCase):
         self.assertIsNotNone(view.graph_section)
 
     def test_navigation_and_regression(self):
+        os.environ["DATA_MODE"] = "mock"
         win = MainWindow()
         win.show()
 
@@ -157,6 +158,9 @@ class TestStep7Telemetry(unittest.TestCase):
             win.sidebar.set_active_page(idx)
             win._on_page_changed(idx, name)
             self.assertEqual(win.stacked_widget.currentIndex(), idx)
+
+        win.close()
+        app.processEvents()
 
 if __name__ == "__main__":
     unittest.main()

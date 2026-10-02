@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app.models.incident import Incident, Location
 from app.models.map import MapState, SearchBoundary
 from app.services.data_service import DataService
-from app.data.mock_provider import MockDataProvider
+from tests.mocks.mock_provider import MockDataProvider
 from app.ui.widgets.mission_map import MissionMap
 from app.ui.widgets.map_info_panel import MapInfoPanel
 from app.ui.views.map_view import MapView
@@ -95,6 +95,9 @@ class TestStep6MissionMap(unittest.TestCase):
         self.assertFalse(panel.btn_view_incident.isHidden())
 
     def test_map_view_integration(self):
+        DataService._instance = None
+        ds = DataService(provider=MockDataProvider())
+        
         view = MapView()
         self.assertIsNotNone(view.mission_map)
         self.assertIsNotNone(view.info_panel)
@@ -106,6 +109,10 @@ class TestStep6MissionMap(unittest.TestCase):
         self.assertIn("INC-002", view.info_panel.lbl_sel_id.text())
 
     def test_cross_navigation_incidents_to_map(self):
+        DataService._instance = None
+        ds = DataService(provider=MockDataProvider())
+        
+        os.environ["DATA_MODE"] = "mock"
         win = MainWindow()
         win.show()
 
@@ -127,6 +134,9 @@ class TestStep6MissionMap(unittest.TestCase):
         self.assertIn("MAP", win.header.page_title.text())
         self.assertEqual(win.map_view.mission_map.get_selected_incident_id(), "INC-001")
         self.assertIn("INC-001", win.map_view.info_panel.lbl_sel_id.text())
+        
+        win.close()
+        app.processEvents()
 
 if __name__ == "__main__":
     unittest.main()
