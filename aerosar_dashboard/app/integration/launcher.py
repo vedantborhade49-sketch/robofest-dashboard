@@ -21,7 +21,7 @@ def run_simulation():
     logger.info("Starting SIMULATION mode...")
     
     # Start Pi Onboard code first so FrameSender listens
-    config = OnboardConfig(runtime_mode="LAPTOP", camera_provider="mock")
+    config = OnboardConfig(runtime_mode="LAPTOP", camera_provider="webcam")
     runtime = OnboardRuntime(config=config)
     runtime.start()
     
