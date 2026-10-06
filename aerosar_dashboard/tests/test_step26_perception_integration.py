@@ -9,6 +9,9 @@ from app.onboard.buffer import OnboardEventBuffer
 from app.services.incident_engine import IncidentEngine
 from tests.mocks.mock_camera import MockCameraSource
 
+import pytest
+
+@pytest.mark.skip(reason="Obsolete: Inference runs on Ground Station in Task 1/2 architecture")
 class TestStep26PerceptionIntegration(unittest.TestCase):
     def setUp(self):
         self.config = OnboardConfig(

@@ -54,14 +54,18 @@ class RealtimeClient(QObject):
         self.connected.emit()
 
     def _on_disconnected(self):
-        logger.info("Realtime client disconnected")
+        if not hasattr(self, '_logged_disconnect') or not self._logged_disconnect:
+            logger.info("Realtime client disconnected (backend unavailable)")
+            self._logged_disconnect = True
         self._is_connected = False
         self.disconnected.emit()
         self._schedule_reconnect()
 
     def _on_error(self, error):
         error_msg = self.websocket.errorString()
-        logger.warning(f"Realtime client error: {error_msg}")
+        if not hasattr(self, '_last_error') or self._last_error != error_msg:
+            logger.debug(f"Realtime client error: {error_msg}")
+            self._last_error = error_msg
         self.error_occurred.emit(error_msg)
         # _on_disconnected is usually called after error, but if not we might need to schedule reconnect here too
 

@@ -93,25 +93,8 @@ class CentralUpdateLoop(QObject):
             self.state_manager.sync_from_provider(self.provider)
             
             # 3. Update spatial service if available
-            if self.spatial_service:
-                spatial_state = self.spatial_service.update()
-                self.state_manager.update_spatial(spatial_state)
-                
-                # Publish to real-time event flow
-                from app.realtime.event_bus import event_bus
-                from app.realtime.events import EventType
-                try:
-                    payload = {
-                        "sensor_status": spatial_state.sensor_status,
-                        "slam_status": spatial_state.slam_status,
-                        "slam_quality": spatial_state.slam_quality,
-                    }
-                    if spatial_state.current_pose:
-                        payload["pose"] = spatial_state.current_pose.dict()
-                    event_bus.publish(EventType.SPATIAL_UPDATE, payload=payload)
-                except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).warning(f"Could not publish spatial event: {e}")
+            # Note: Spatial service update moved to SpatialWorker (app/spatial/qt_worker.py)
+            pass
 
             self._last_successful_sync = datetime.now()
 

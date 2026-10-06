@@ -47,9 +47,35 @@ class PerceptionWorker(QObject):
         try:
             if detections:
                 ds = DataService()
-                state = ds.get_state()
-                spatial_state = state.spatial if state else None
-                incidents = self._incident_engine.process_detections(detections, spatial_state)
+                ds = DataService()
+                history = ds.get_spatial_history()
+                
+                from app.models.spatial import SpatialAssociation
+                
+                # We do the lookup per detection
+                # Actually, IncidentEngine expects process_detections(detections, ...). 
+                # Let's just update IncidentEngine to accept SpatialStateHistory directly,
+                # because `detections` is a list and it's cleaner to let the engine handle it.
+                # BUT the prompt asked for "Detection -> frame timestamp -> SpatialStateHistory -> SpatialLocator -> SpatialAssociation -> IncidentEngine"
+                # To exactly follow that, let's pass a dictionary mapping Detection -> SpatialAssociation to IncidentEngine.
+                # Actually, if I update IncidentEngine.process_detections to take List[Tuple[Detection, SpatialAssociation]] that works.
+                
+                # For backward compatibility, let's just pass `history` to process_detections and let the engine do it. 
+                # Or wait, let's do the association here.
+                
+                associations = []
+                for det in detections:
+                    assoc = SpatialAssociation(available=False, association_timestamp=det.timestamp)
+                    if history:
+                        state = history.get_state_at(det.timestamp)
+                        if state:
+                            assoc.spatial_state = state
+                            assoc.temporal_error_ms = abs((state.timestamp - det.timestamp).total_seconds()) * 1000.0
+                            assoc.available = True
+                    associations.append((det, assoc))
+                    
+                incidents = self._incident_engine.process_associations(associations)
+
                 for inc in incidents:
                     try:
                         ds.add_incident(inc)

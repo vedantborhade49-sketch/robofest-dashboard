@@ -34,10 +34,14 @@ class RealMAVLinkProvider(MAVLinkProvider):
         self.connection_string = connection_string
         self.baud_rate = baud_rate
         self.master = None
+        self._warned_no_pymavlink = False
         
     def connect(self) -> bool:
         if not mavutil:
-            logger.error("pymavlink is not installed")
+            if not self._warned_no_pymavlink:
+                logger.error("pymavlink is not installed. Telemetry will be UNAVAILABLE.")
+                print("pymavlink is not installed")
+                self._warned_no_pymavlink = True
             return False
             
         try:

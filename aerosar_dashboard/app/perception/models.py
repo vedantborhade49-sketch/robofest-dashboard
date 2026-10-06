@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -23,3 +23,25 @@ class Detection(BaseModel):
     center_y: Optional[float] = None
     width: Optional[int] = None
     height: Optional[int] = None
+
+# --- New CV Boundary Models ---
+
+class DetectionResult(BaseModel):
+    """Normalized CV output for a single object detection."""
+    class_name: str
+    confidence: float
+    bbox: BBox
+    class_id: Optional[int] = None
+    track_id: Optional[str] = None
+    metadata: Optional[dict] = None
+
+class CVResult(BaseModel):
+    """Structured result of processing a single NetworkFrame."""
+    frame_id: int
+    timestamp: datetime
+    detections: list[DetectionResult] = Field(default_factory=list)
+    processing_time: Optional[float] = None
+    model_name: Optional[str] = None
+    model_version: Optional[str] = None
+    metadata: Optional[dict] = None
+    error: Optional[str] = None

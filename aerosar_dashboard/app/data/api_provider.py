@@ -50,7 +50,7 @@ class APIDataProvider(DataProvider):
                     data = resp.json()
                     self._incidents = [Incident(**i) for i in (data.get("incidents", data) if isinstance(data, dict) else data)]
             except Exception as e:
-                logger.warning(f"Could not sync initial incidents: {e}")
+                logger.debug(f"Could not sync initial incidents: {e}")
 
             # Reports
             try:
@@ -59,7 +59,7 @@ class APIDataProvider(DataProvider):
                     data = resp.json()
                     self._reports = [Report(**r) for r in (data.get("reports", data) if isinstance(data, dict) else data)]
             except Exception as e:
-                logger.warning(f"Could not sync initial reports: {e}")
+                logger.debug(f"Could not sync initial reports: {e}")
 
             # Telemetry
             try:
@@ -68,7 +68,7 @@ class APIDataProvider(DataProvider):
                     from app.models.telemetry import Telemetry
                     self._telemetry = Telemetry(**resp.json())
             except Exception as e:
-                logger.warning(f"Could not sync initial telemetry: {e}")
+                logger.debug(f"Could not sync initial telemetry: {e}")
 
             # System Health / Status
             try:
@@ -78,7 +78,7 @@ class APIDataProvider(DataProvider):
                     if "health" in data:
                         self._health = SystemHealth(**data["health"])
             except Exception as e:
-                logger.warning(f"Could not sync initial onboard status: {e}")
+                logger.debug(f"Could not sync initial onboard status: {e}")
 
             # Spatial Position
             try:
@@ -87,7 +87,7 @@ class APIDataProvider(DataProvider):
                     # Stored via WebSocket usually, but we could initialize MapState here if needed.
                     pass
             except Exception as e:
-                logger.warning(f"Could not sync initial spatial position: {e}")
+                logger.debug(f"Could not sync initial spatial position: {e}")
 
         except Exception as e:
             logger.error(f"Failed to perform REST initial sync: {e}")

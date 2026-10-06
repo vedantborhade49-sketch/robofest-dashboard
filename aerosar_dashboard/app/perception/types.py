@@ -32,3 +32,13 @@ class DetectorConfig:
     image_size: int = 640
     target_classes: Optional[list[str]] = None
     input_source: str = "video"
+
+import numpy as np
+
+@dataclass
+class NetworkFrame:
+    frame_id: int
+    timestamp: datetime
+    image: np.ndarray
+    camera_id: str | None = None
+    metadata: dict | None = None

@@ -140,7 +140,10 @@ class EvidenceFrameWidget(QFrame):
         hud_bottom_left = f"FRAME: {img_id}   TIME: {time_str}"
         painter.drawText(QRectF(16, h - 26, w - 32, 14), Qt.AlignmentFlag.AlignLeft, hud_bottom_left)
 
-        hud_bottom_right = f"LOCAL SLAM: X={self.incident.location.x:.1f}m Y={self.incident.location.y:.1f}m Z={self.incident.location.z:.1f}m"
+        if self.incident.location:
+            hud_bottom_right = f"LOCAL SLAM: X={self.incident.location.x:.1f}m Y={self.incident.location.y:.1f}m Z={self.incident.location.z:.1f}m"
+        else:
+            hud_bottom_right = "LOCAL SLAM: UNAVAILABLE"
         painter.drawText(QRectF(16, h - 26, w - 32, 14), Qt.AlignmentFlag.AlignRight, hud_bottom_right)
 
 
@@ -485,8 +488,12 @@ class IncidentDetail(QFrame):
         if not self._current_incident:
             return
         inc = self._current_incident
+        if inc.location:
+            loc_str = f"(X: {inc.location.x:.1f}m, Y: {inc.location.y:.1f}m, Z: {inc.location.z:.1f}m) LOCAL / SLAM"
+        else:
+            loc_str = "(LOCATION UNAVAILABLE)"
         self.banner_text.setText(
-            f"📍 [MAP QUEUED] Target {inc.incident_id} at (X: {inc.location.x:.1f}m, Y: {inc.location.y:.1f}m, Z: {inc.location.z:.1f}m) LOCAL / SLAM queued for Mission Map view."
+            f"📍 [MAP QUEUED] Target {inc.incident_id} at {loc_str} queued for Mission Map view."
         )
         self.action_banner.show()
         self.view_on_map_requested.emit(inc)

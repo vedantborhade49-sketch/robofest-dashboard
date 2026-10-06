@@ -29,8 +29,10 @@ class DashboardSettings(BaseModel):
     # 4. CAMERA
     camera_source: str = "Network Camera"
     camera_network_host: str = "127.0.0.1"
-    camera_network_port: int = 5000
+    camera_network_port: int = 6001
     camera_reconnect_delay: float = 2.0
+    camera_frame_timeout: float = 2.0
+    camera_frame_buffer_size: int = 1
     camera_resolution: str = "1280 × 720"
     camera_fps: int = Field(default=30, gt=0, description="Target frame rate")
     mirror_preview: bool = False

@@ -77,7 +77,7 @@ class IncidentEngine:
             return "PERSON_DETECTED"
         return "UNKNOWN_HAZARD"
 
-    def process_detection(self, det: Detection, spatial_state: Optional[SpatialState] = None) -> Optional[Incident]:
+    def process_detection(self, det: Detection, spatial_state: Optional[SpatialState] = None, assoc: Optional[Any] = None) -> Optional[Incident]:
         # validate
         if not det or det.confidence is None:
             return None
@@ -110,7 +110,12 @@ class IncidentEngine:
         s_conf = None
         src_sensor = None
         
-        if spatial_state:
+        # Use spatial_state from assoc if provided, else fallback
+        actual_state = spatial_state
+        if assoc is not None and getattr(assoc, "available", False):
+            actual_state = assoc.spatial_state
+            
+        if actual_state:
             from app.spatial.locator import SpatialLocator
             locator = SpatialLocator()
             
@@ -122,7 +127,7 @@ class IncidentEngine:
                 bottom_x = center_x
                 bottom_y = center_y
                 
-            base_target, map_target = locator.locate_target(incident_id, bottom_x, bottom_y, spatial_state)
+            base_target, map_target = locator.locate_target(incident_id, bottom_x, bottom_y, actual_state)
             
             if map_target:
                 location = Location(x=map_target.x, y=map_target.y, z=map_target.z)
@@ -165,6 +170,14 @@ class IncidentEngine:
         created: List[Incident] = []
         for det in detections or []:
             inc = self.process_detection(det, spatial_state)
+            if inc:
+                created.append(inc)
+        return created
+
+    def process_associations(self, associations: List[Tuple[Detection, Any]]) -> List[Incident]:
+        created: List[Incident] = []
+        for det, assoc in associations or []:
+            inc = self.process_detection(det, None, assoc=assoc)
             if inc:
                 created.append(inc)
         return created

@@ -138,16 +138,16 @@ class MockVideoSource(VideoSource):
         self._is_open = False
 
 
-class NetworkCameraProvider(VideoSource):
+class TCPVideoProvider(VideoSource):
     """
     Connects to a remote camera stream via the binary AEROSAR Frame Protocol.
     """
-    def __init__(self, host: str, port: int, reconnect_delay: float = 2.0):
+    def __init__(self, host: str, port: int, reconnect_delay: float = 2.0, frame_timeout: float = 2.0):
         from app.communication.frame_receiver import FrameReceiver
         self.host = host
         self.port = port
         self.source = f"tcp://{host}:{port}"
-        self.receiver = FrameReceiver(host, port, reconnect_delay)
+        self.receiver = FrameReceiver(host, port, reconnect_delay, frame_timeout)
         
     def open(self):
         self.receiver.start()
@@ -156,21 +156,21 @@ class NetworkCameraProvider(VideoSource):
     def read(self):
         import time
         # Provide blocking behavior (up to a timeout) similar to OpenCV
-        # This prevents 100% CPU spin-loops in the perception worker when waiting for a frame.
         timeout = 1.0
         start = time.time()
         while time.time() - start < timeout:
-            with self.receiver._lock:
-                frame = self.receiver._latest_frame
-                if frame is not None:
-                    self.receiver._latest_frame = None  # Consume frame
-                    return frame
+            frame = self.receiver.get_latest_frame()
+            if frame is not None:
+                # We consume the latest frame
+                with self.receiver._lock:
+                    self.receiver._latest_network_frame = None
+                return frame
             time.sleep(0.01)
         return None
 
     def is_open(self) -> bool:
         from app.communication.frame_receiver import ConnectionState
-        return self.receiver._running and self.receiver.state == ConnectionState.CONNECTED
+        return self.receiver._running and self.receiver.state in (ConnectionState.CONNECTED, ConnectionState.RECEIVING)
         
     def release(self):
         self.receiver.stop()

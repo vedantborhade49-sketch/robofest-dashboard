@@ -137,13 +137,13 @@ class DataService(QObject):
         from app.spatial.service import SpatialService
         
         class StubLiDAR(LiDARProvider):
-            def start(self): raise NotImplementedError("HARDWARE NOT AVAILABLE: LiDAR")
+            def start(self): pass # HARDWARE NOT AVAILABLE: LiDAR
             def stop(self): pass
             def get_scan(self): return None
             def is_connected(self): return False
             
         class StubSLAM(SLAMProvider):
-            def start(self): raise NotImplementedError("HARDWARE NOT AVAILABLE: SLAM")
+            def start(self): pass # HARDWARE NOT AVAILABLE: SLAM
             def stop(self): pass
             def update(self, scan): pass
             def get_pose(self): return None
@@ -158,7 +158,50 @@ class DataService(QObject):
             provider=StubLiDAR(),
             slam_provider=StubSLAM()
         )
-        # self.spatial_service.start()  # Do not start stub
+        
+        from app.spatial.history import SpatialStateHistory
+        from app.spatial.qt_worker import SpatialWorker
+        from PySide6.QtCore import QThread, QTimer
+        
+        self.spatial_history = SpatialStateHistory(max_history_size=100, max_age_seconds=2.0)
+        self.spatial_worker = SpatialWorker(self.spatial_service, self.spatial_history)
+        self._spatial_thread = QThread()
+        self.spatial_worker.moveToThread(self._spatial_thread)
+        
+        self._spatial_thread.started.connect(self.spatial_worker.start)
+        self.spatial_worker.stopped.connect(self._spatial_thread.quit)
+        
+        # We need a timer to tick the spatial worker
+        # Timer MUST be created in the main thread and signal the worker, 
+        # or created in the worker thread. Since it's DataService in UI thread,
+        # we create it here and connect to the slot.
+        self._spatial_timer = QTimer()
+        self._spatial_timer.timeout.connect(self.spatial_worker.process_update)
+        
+        def _on_spatial_state_updated(state):
+            # Update state manager and publish event
+            self._state_manager.update_spatial(state)
+            # Publish to real-time event flow
+            from app.realtime.event_bus import event_bus
+            from app.realtime.events import EventType
+            try:
+                payload = {
+                    "sensor_status": state.sensor_status,
+                    "slam_status": state.slam_status,
+                    "slam_quality": state.slam_quality,
+                }
+                if state.current_pose:
+                    payload["pose"] = state.current_pose.dict()
+                event_bus.publish(EventType.SPATIAL_UPDATE, payload=payload)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Could not publish spatial event: {e}")
+                
+        self.spatial_worker.spatial_state_updated.connect(_on_spatial_state_updated)
+        
+        self._spatial_thread.start()
+        self._spatial_timer.start(500) # 500ms heartbeat
+
 
         # Central update loop (500ms heartbeat)
         self._update_loop = CentralUpdateLoop(
@@ -325,6 +368,9 @@ class DataService(QObject):
     # -------------------------------------------------------------
     def get_state(self) -> Optional[AppState]:
         return self._state_manager.get_state()
+        
+    def get_spatial_history(self):
+        return getattr(self, "spatial_history", None)
 
     def get_mission_data(self):
         return self._state_manager.get_mission()

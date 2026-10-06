@@ -140,3 +140,12 @@ class SpatialState(BaseModel):
     local_map: Optional[OccupancyGrid] = None
     slam_status: str = "DISABLED" # DISABLED, INITIALIZING, TRACKING, LOST, ERROR
     slam_quality: str = "N/A"
+
+class SpatialAssociation(BaseModel):
+    """
+    Matches a detection to a specific spatial state in time.
+    """
+    spatial_state: Optional[SpatialState] = None
+    association_timestamp: datetime = Field(default_factory=datetime.now)
+    temporal_error_ms: Optional[float] = None
+    available: bool = False
