@@ -112,3 +112,35 @@ class EventModel(Base):
     incident_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     details: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+
+class EntityModel(Base):
+    __tablename__ = "entities"
+    entity_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String)
+    first_seen: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    first_frame_id: Mapped[int] = mapped_column(Integer, default=0)
+    last_frame_id: Mapped[int] = mapped_column(Integer, default=0)
+    sighting_count: Mapped[int] = mapped_column(Integer, default=1)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[str] = mapped_column(String)
+    image_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+class AnomalyEventModel(Base):
+    __tablename__ = "anomaly_events"
+    event_id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    event_type: Mapped[str] = mapped_column(String)
+    entity_id: Mapped[str] = mapped_column(String, index=True)
+    status: Mapped[str] = mapped_column(String)
+    first_seen: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    first_frame_id: Mapped[int] = mapped_column(Integer, default=0)
+    last_frame_id: Mapped[int] = mapped_column(Integer, default=0)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    spatial_information: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=get_utc_now, onupdate=get_utc_now)

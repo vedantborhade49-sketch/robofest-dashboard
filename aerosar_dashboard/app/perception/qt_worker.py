@@ -20,6 +20,12 @@ class PerceptionWorker(QObject):
         self._running = False
         # incident engine for converting detections -> incidents
         self._incident_engine = IncidentEngine()
+        
+        # Phase 2: Entity and Event Registries
+        from app.perception.entity_registry import EntityRegistry
+        from app.incidents.event_registry import EventRegistry
+        self._entity_registry = EntityRegistry()
+        self._event_registry = EventRegistry()
 
     @Slot()
     def start(self):
@@ -47,24 +53,19 @@ class PerceptionWorker(QObject):
         try:
             if detections:
                 ds = DataService()
-                ds = DataService()
                 history = ds.get_spatial_history()
                 
                 from app.models.spatial import SpatialAssociation
                 
-                # We do the lookup per detection
-                # Actually, IncidentEngine expects process_detections(detections, ...). 
-                # Let's just update IncidentEngine to accept SpatialStateHistory directly,
-                # because `detections` is a list and it's cleaner to let the engine handle it.
-                # BUT the prompt asked for "Detection -> frame timestamp -> SpatialStateHistory -> SpatialLocator -> SpatialAssociation -> IncidentEngine"
-                # To exactly follow that, let's pass a dictionary mapping Detection -> SpatialAssociation to IncidentEngine.
-                # Actually, if I update IncidentEngine.process_detections to take List[Tuple[Detection, SpatialAssociation]] that works.
+                # 1. Entity Tracking
+                entity_pairs = self._entity_registry.process_detections(detections, frame)
                 
-                # For backward compatibility, let's just pass `history` to process_detections and let the engine do it. 
-                # Or wait, let's do the association here.
+                # 2. Anomaly Event Registry
+                event_triplets = self._event_registry.process_entities(entity_pairs)
                 
+                # 3. Spatial Association
                 associations = []
-                for det in detections:
+                for det, entity, event in event_triplets:
                     assoc = SpatialAssociation(available=False, association_timestamp=det.timestamp)
                     if history:
                         state = history.get_state_at(det.timestamp)
