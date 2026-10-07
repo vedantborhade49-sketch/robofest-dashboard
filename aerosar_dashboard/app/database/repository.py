@@ -129,7 +129,7 @@ class Repository:
                     bbox = BoundingBox(x=m.bbox_x, y=m.bbox_y, width=m.bbox_width, height=m.bbox_height)
                     
                 location = None
-                if m.location_x is not None:
+                if m.location_x is not None and m.location_y is not None and m.location_z is not None:
                     location = Location(x=m.location_x, y=m.location_y, z=m.location_z)
                     
                 inc = Incident(

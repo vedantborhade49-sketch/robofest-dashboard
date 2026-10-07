@@ -11,6 +11,6 @@ if exist ".venv\Scripts\python.exe" (
     pause
     exit /b
 )
-
-%PYTHON_EXE% -m aerosar_dashboard.app.integration.launcher --mode GROUND_STATION
+set PYTHONPATH=%~dp0aerosar_dashboard
+%PYTHON_EXE% -m app.integration.launcher --mode GROUND_STATION
 pause

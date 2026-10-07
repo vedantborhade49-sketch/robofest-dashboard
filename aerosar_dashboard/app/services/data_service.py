@@ -4,7 +4,7 @@ from PySide6.QtCore import QObject, Signal
 
 from app.data.provider import DataProvider
 from app.data.api_provider import APIDataProvider
-from tests.mocks.mock_provider import MockDataProvider
+# mock provider removed
 from app.models.incident import Incident
 from app.models.event import Event
 from app.models.report import Report
@@ -62,7 +62,7 @@ class DataService(QObject):
         self._state_manager.initialize_from_provider(self._provider)
 
         # Handle Mock Mode for WebSocket
-        is_mock = isinstance(self._provider, MockDataProvider)
+        is_mock = type(self._provider).__name__ == "MockDataProvider"
 
         # --- DATABASE & PERSISTENCE ---
         from app.database.database import init_db
@@ -354,7 +354,7 @@ class DataService(QObject):
         self._update_loop.set_provider(provider)
         self._state_manager.initialize_from_provider(provider)
         
-        is_mock = isinstance(provider, MockDataProvider)
+        is_mock = type(provider).__name__ == "MockDataProvider"
         if hasattr(self, "_realtime_client"):
             self._realtime_client.set_mock_mode(is_mock)
             if not is_mock:
