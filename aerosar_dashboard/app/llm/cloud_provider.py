@@ -1,46 +1,50 @@
 import json
 import logging
-from openai import OpenAI
+import os
+import anthropic
 from app.llm.provider import LLMProvider
 from app.llm.models import LLMResponse
 from app.llm.config import LLMConfig
 
 logger = logging.getLogger(__name__)
 
-import os
-
 class CloudLLMProvider(LLMProvider):
     def __init__(self, config: LLMConfig):
         super().__init__(config)
-        self.api_key = self.config.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.api_key = self.config.api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
-            logger.warning("CloudLLMProvider initialized without an API key. Generation will likely fail.")
+            logger.warning("CloudLLMProvider initialized without an ANTHROPIC_API_KEY. Generation will likely fail.")
             
-        base_url = None
-        if os.getenv("GEMINI_API_KEY") or "gemini" in self.config.model_name.lower():
-            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-            
-        self.client = OpenAI(api_key=self.api_key, base_url=base_url)
+        self.client = anthropic.Anthropic(api_key=self.api_key)
         
     def generate(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         try:
-            # We use the structured outputs feature if available.
-            response = self.client.beta.chat.completions.parse(
+            schema = LLMResponse.model_json_schema()
+            
+            tool = {
+                "name": "generate_incident_report",
+                "description": "Generate a structured incident report.",
+                "input_schema": schema,
+            }
+            
+            response = self.client.messages.create(
                 model=self.config.model_name,
+                max_tokens=self.config.max_tokens or 1024,
+                temperature=self.config.temperature,
+                system=system_prompt,
                 messages=[
-                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                response_format=LLMResponse,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                timeout=self.config.timeout
+                tools=[tool],
+                tool_choice={"type": "tool", "name": "generate_incident_report"}
             )
-            parsed_response = response.choices[0].message.parsed
-            if parsed_response:
-                return parsed_response
-            else:
-                raise ValueError("Parsed response is None")
+            
+            tool_call = next((block for block in response.content if block.type == "tool_use"), None)
+            if not tool_call:
+                raise ValueError("Model did not return a tool call.")
+            
+            return LLMResponse(**tool_call.input)
+            
         except Exception as e:
             logger.error(f"Cloud LLM generation failed: {e}")
             raise RuntimeError(f"Cloud LLM Error: {e}") from e

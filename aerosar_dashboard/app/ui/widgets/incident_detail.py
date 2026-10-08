@@ -46,6 +46,21 @@ class EvidenceFrameWidget(QFrame):
         if not self.incident:
             return
 
+        # 2.5 Draw real evidence image if available
+        if self.incident.evidence_image:
+            from PySide6.QtGui import QPixmap
+            import os
+            if os.path.exists(self.incident.evidence_image):
+                pixmap = QPixmap(self.incident.evidence_image)
+                if not pixmap.isNull():
+                    # Scale to fill the widget (or keep aspect ratio)
+                    # The bounding box logic assumes normalized coords, so filling the widget aligns with the math.
+                    pixmap = pixmap.scaled(w, h, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    painter.drawPixmap(0, 0, pixmap)
+                    
+                    # Dim it slightly so UI elements are readable
+                    painter.fillRect(0, 0, w, h, QColor(0, 0, 0, 80))
+
         # 3. Viewfinder corners
         corner_pen = QPen(QColor(Theme.TEXT_SECONDARY), 1)
         painter.setPen(corner_pen)

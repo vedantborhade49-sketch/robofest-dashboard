@@ -13,20 +13,20 @@ class Telemetry(BaseModel):
     position: Location
 
 class FlightTelemetry(BaseModel):
-    altitude: float = 14.8           # meters
-    speed: float = 3.2               # m/s
-    vertical_speed: float = 0.4      # m/s
-    heading: float = 127.0           # degrees
-    roll: float = 0.8                # degrees
-    pitch: float = -1.2              # degrees
-    yaw: float = 127.0               # degrees
+    altitude: float = 0.0           # meters
+    speed: float = 0.0              # m/s
+    vertical_speed: float = 0.0     # m/s
+    heading: float = 0.0            # degrees
+    roll: float = 0.0               # degrees
+    pitch: float = 0.0              # degrees
+    yaw: float = 0.0                # degrees
 
 class PositionTelemetry(BaseModel):
-    x: float = 12.4                  # meters (LOCAL / SLAM)
-    y: float = 8.7                   # meters (LOCAL / SLAM)
-    z: float = 14.8                  # meters (LOCAL / SLAM)
+    x: float = 0.0                  # meters (LOCAL / SLAM)
+    y: float = 0.0                  # meters (LOCAL / SLAM)
+    z: float = 0.0                  # meters (LOCAL / SLAM)
     frame: str = "LOCAL / SLAM"
-    heading: float = 127.0           # degrees
+    heading: float = 0.0            # degrees
 
 class GPSTelemetry(BaseModel):
     latitude: Optional[float] = None
@@ -34,49 +34,49 @@ class GPSTelemetry(BaseModel):
     altitude: Optional[float] = None
     satellites: int = 0
     fix_type: int = 0
-    hdop: float = 99.99
-    vdop: float = 99.99
+    hdop: float = 0.0
+    vdop: float = 0.0
 
 class PowerTelemetry(BaseModel):
-    battery_percent: float = 82.0    # %
-    voltage: float = 15.7            # Volts
-    current: float = 8.4             # Amperes
-    power_watts: float = 131.9       # Watts (voltage * current)
-    status: str = "GOOD"             # GOOD | WARNING | CRITICAL
+    battery_percent: float = 0.0    # %
+    voltage: float = 0.0            # Volts
+    current: float = 0.0            # Amperes
+    power_watts: float = 0.0        # Watts (voltage * current)
+    status: str = "UNKNOWN"         # GOOD | WARNING | CRITICAL
 
 class CommunicationTelemetry(BaseModel):
-    link_status: str = "CONNECTED"   # CONNECTED | DEGRADED | LOST
-    signal_percent: float = 87.0     # %
-    latency_ms: float = 38.0         # ms
-    packet_loss_percent: float = 0.2 # %
-    uplink: str = "CONNECTED"
-    downlink: str = "CONNECTED"
+    link_status: str = "DISCONNECTED"   # CONNECTED | DEGRADED | LOST
+    signal_percent: float = 0.0         # %
+    latency_ms: float = 0.0             # ms
+    packet_loss_percent: float = 0.0    # %
+    uplink: str = "DISCONNECTED"
+    downlink: str = "DISCONNECTED"
     heartbeat_age: float = 0.0
 
 class SensorStatus(BaseModel):
-    imu: str = "READY"
-    barometer: str = "READY"
-    camera: str = "READY"
-    lidar: str = "STANDBY"
-    gps: str = "NOT REQUIRED"        # Confined/GPS-denied robotics architecture
-    slam: str = "STANDBY"
+    imu: str = "UNKNOWN"
+    barometer: str = "UNKNOWN"
+    camera: str = "UNKNOWN"
+    lidar: str = "UNKNOWN"
+    gps: str = "UNKNOWN"
+    slam: str = "UNKNOWN"
 
 class FlightControllerStatus(BaseModel):
-    status: str = "CONNECTED"
-    autopilot: str = "ARDUPILOT"
-    mode: str = "GUIDED"
+    status: str = "DISCONNECTED"
+    autopilot: str = "UNKNOWN"
+    mode: str = "UNKNOWN"
     armed: bool = False
-    link: str = "CONNECTED"
+    link: str = "DISCONNECTED"
 
 class CompanionComputerStatus(BaseModel):
-    device: str = "RASPBERRY PI 5"
-    status: str = "ONLINE"
-    cpu_percent: float = 34.0
-    ram_percent: float = 42.0
-    temperature_c: float = 51.0
-    ai_status: str = "READY"
-    camera_status: str = "READY"
-    lidar_status: str = "STANDBY"
+    device: str = "UNKNOWN"
+    status: str = "DISCONNECTED"
+    cpu_percent: float = 0.0
+    ram_percent: float = 0.0
+    temperature_c: float = 0.0
+    ai_status: str = "UNKNOWN"
+    camera_status: str = "UNKNOWN"
+    lidar_status: str = "UNKNOWN"
 
 class TelemetryHistoryPoint(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)

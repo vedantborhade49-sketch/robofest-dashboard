@@ -10,8 +10,6 @@ from app.ui.responsive import ScreenSize, get_screen_size
 from app.ui.views.overview_view import OverviewView
 from app.ui.views.live_feed_view import LiveFeedView
 from app.ui.views.incidents_view import IncidentsView
-from app.ui.views.map_view import MapView
-from app.ui.views.telemetry_view import TelemetryView
 from app.ui.views.reports_view import ReportsView
 from app.ui.views.event_log_view import EventLogView
 from app.ui.views.settings_view import SettingsView
@@ -76,8 +74,6 @@ class MainWindow(QMainWindow):
         self.data_service.realtime_status_updated.connect(self.header.set_realtime_status)
         
         # Cross-view navigation connections
-        self.incidents_view.navigate_to_map.connect(self._on_navigate_to_map)
-        self.map_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
         self.reports_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
         self.incidents_view.navigate_to_reports.connect(self._on_navigate_to_reports)
         self.event_log_view.navigate_to_incidents.connect(self._on_navigate_to_incidents)
@@ -130,8 +126,6 @@ class MainWindow(QMainWindow):
         self.overview_view = OverviewView()
         self.live_feed_view = LiveFeedView()
         self.incidents_view = IncidentsView()
-        self.map_view = MapView()
-        self.telemetry_view = TelemetryView()
         self.reports_view = ReportsView()
         self.event_log_view = EventLogView()
         self.settings_view = SettingsView()
@@ -141,8 +135,6 @@ class MainWindow(QMainWindow):
             self.overview_view,
             self.live_feed_view,
             self.incidents_view,
-            self.map_view,
-            self.telemetry_view,
             self.reports_view,
             self.event_log_view,
             self.settings_view
@@ -167,21 +159,15 @@ class MainWindow(QMainWindow):
         # Update header
         self.header.set_page_title(page_name)
 
-    def _on_navigate_to_map(self, incident: Incident):
-        """Cross-page action: Focuses selected incident on the Mission Map."""
-        self.sidebar.set_active_page(3)
-        self._on_page_changed(3, "Map")
-        self.map_view.select_incident(incident.incident_id)
-
     def _on_navigate_to_incidents(self, incident_id: str):
-        """Cross-page action: Opens selected map incident in Incidents View."""
+        """Cross-page action: Opens selected incident in Incidents View."""
         self.sidebar.set_active_page(2)
         self._on_page_changed(2, "Incidents")
         self.incidents_view.select_incident_by_id(incident_id)
 
     def _on_navigate_to_reports(self, incident_id: str):
         """Cross-page action: Opens selected incident's report in Reports View."""
-        self.sidebar.set_active_page(5)
-        self._on_page_changed(5, "Reports")
+        self.sidebar.set_active_page(3)
+        self._on_page_changed(3, "Reports")
         self.reports_view.select_report_by_incident_id(incident_id)
 

@@ -176,47 +176,66 @@ class MissionMap(QWidget):
         # 1. Canvas background
         painter.fillRect(0, 0, int(w), int(h), QColor("#090D14"))
 
-        # 2. Search boundary area box
-        tl = self._to_screen(self._min_x, self._max_y)
-        br = self._to_screen(self._max_x, self._min_y)
-        area_rect = QRectF(tl.x(), tl.y(), br.x() - tl.x(), br.y() - tl.y())
-
-        # Area background tint
-        painter.fillRect(area_rect, QColor("#0C1118"))
-
-        # 3. Explored Area Polygon
-        self._draw_explored_area(painter)
-
-        # 4. Metric Grid lines & labels
-        self._draw_grid(painter, area_rect)
-
-        # 5. Search Area Outer Boundary & Corners
-        self._draw_boundary_frame(painter, area_rect)
-
-        # 6. Flight Trajectory
-        if self.show_trajectory:
-            self._draw_trajectory(painter)
-
-        # 7. Incident Markers
-        self._draw_incidents(painter)
-
-        # 7.1 LiDAR Scan
-        if self.show_lidar:
-            self._draw_lidar(painter)
+        # Check if spatial data is available
+        spatial_valid = False
+        if self._spatial_state and self._spatial_state.slam_status not in ("DISABLED", "ERROR", "LOST"):
+            spatial_valid = True
             
-        # 7.2 Obstacles
-        if self.show_obstacles:
-            self._draw_obstacles(painter)
-            
-        # 7.3 Occupancy Map
-        if self.show_occupancy:
-            self._draw_occupancy(painter)
+        # In a real environment we might have map_state even without spatial_state, but the user requested:
+        # "If spatial is not live, show 'SPATIAL DATA STATUS: UNAVAILABLE'."
+        
+        # We will also consider it invalid if we don't have a map state
+        if not self._map_state:
+            spatial_valid = False
 
-        # 8. Drone Marker & Sensor FOV Cone
-        self._draw_drone(painter)
+        if spatial_valid:
+            # 2. Search boundary area box
+            tl = self._to_screen(self._min_x, self._max_y)
+            br = self._to_screen(self._max_x, self._min_y)
+            area_rect = QRectF(tl.x(), tl.y(), br.x() - tl.x(), br.y() - tl.y())
 
-        # 9. Tactical Overlays (North Arrow, Scale Bar, Frame Badge)
-        self._draw_overlays(painter, w, h)
+            # Area background tint
+            painter.fillRect(area_rect, QColor("#0C1118"))
+
+            # 3. Explored Area Polygon
+            self._draw_explored_area(painter)
+
+            # 4. Metric Grid lines & labels
+            self._draw_grid(painter, area_rect)
+
+            # 5. Search Area Outer Boundary & Corners
+            self._draw_boundary_frame(painter, area_rect)
+
+            # 6. Flight Trajectory
+            if self.show_trajectory:
+                self._draw_trajectory(painter)
+
+            # 7. Incident Markers
+            self._draw_incidents(painter)
+
+            # 7.1 LiDAR Scan
+            if self.show_lidar:
+                self._draw_lidar(painter)
+                
+            # 7.2 Obstacles
+            if self.show_obstacles:
+                self._draw_obstacles(painter)
+                
+            # 7.3 Occupancy Map
+            if self.show_occupancy:
+                self._draw_occupancy(painter)
+
+            # 8. Drone Marker & Sensor FOV Cone
+            self._draw_drone(painter)
+
+            # 9. Tactical Overlays (North Arrow, Scale Bar, Frame Badge)
+            self._draw_overlays(painter, w, h)
+        else:
+            # UNAVAILABLE STATE
+            font = QFont("Segoe UI", 16, QFont.Weight.Bold)
+            painter.setFont(font)
+            painter.setPen(QColor(Theme.TEXT_SECONDARY))
+            painter.drawText(QRectF(0, 0, w, h), Qt.AlignmentFlag.AlignCenter, "SPATIAL DATA STATUS: UNAVAILABLE")
 
     def _draw_grid(self, painter: QPainter, area: QRectF):
         """Draws subtle grid lines and metric labels every 5 meters."""

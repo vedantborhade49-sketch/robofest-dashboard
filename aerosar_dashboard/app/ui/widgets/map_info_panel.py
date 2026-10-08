@@ -75,9 +75,9 @@ class MapInfoPanel(QFrame):
         pb_layout.setHorizontalSpacing(12)
         pb_layout.setVerticalSpacing(4)
 
-        self.lbl_x = QLabel("12.4 m")
-        self.lbl_y = QLabel("8.7 m")
-        self.lbl_z = QLabel("14.8 m")
+        self.lbl_x = QLabel("0.0 m")
+        self.lbl_y = QLabel("0.0 m")
+        self.lbl_z = QLabel("0.0 m")
         for lbl in (self.lbl_x, self.lbl_y, self.lbl_z):
             lbl.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 13px; font-weight: bold; font-family: monospace;")
 
@@ -92,7 +92,7 @@ class MapInfoPanel(QFrame):
         hb_layout.setContentsMargins(10, 8, 10, 8)
         hb_t = QLabel("HEADING")
         hb_t.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px; font-weight: bold;")
-        self.lbl_heading = QLabel("127°")
+        self.lbl_heading = QLabel("0°")
         self.lbl_heading.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 16px; font-weight: bold; font-family: monospace;")
         hb_layout.addWidget(hb_t)
         hb_layout.addStretch()
@@ -108,7 +108,7 @@ class MapInfoPanel(QFrame):
         m_row = QHBoxLayout()
         m_lbl = QLabel("SEARCH PROGRESS")
         m_lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-weight: bold;")
-        self.lbl_progress = QLabel("42%")
+        self.lbl_progress = QLabel("0%")
         self.lbl_progress.setStyleSheet(f"color: {Theme.ACCENT}; font-size: 12px; font-weight: bold;")
         m_row.addWidget(m_lbl)
         m_row.addStretch()
@@ -118,7 +118,7 @@ class MapInfoPanel(QFrame):
         self.progress_bar = QProgressBar()
         self.progress_bar.setFixedHeight(5)
         self.progress_bar.setTextVisible(False)
-        self.progress_bar.setValue(42)
+        self.progress_bar.setValue(0)
         self.progress_bar.setStyleSheet(f"""
             QProgressBar {{
                 background-color: {Theme.BG_BASE};
@@ -135,7 +135,7 @@ class MapInfoPanel(QFrame):
         exp_row = QHBoxLayout()
         exp_lbl = QLabel("EXPLORED AREA")
         exp_lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 10px; font-weight: bold;")
-        self.lbl_explored = QLabel("42%")
+        self.lbl_explored = QLabel("0%")
         self.lbl_explored.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 12px; font-weight: bold;")
         exp_row.addWidget(exp_lbl)
         exp_row.addStretch()
@@ -202,7 +202,7 @@ class MapInfoPanel(QFrame):
         tl.setContentsMargins(0, 0, 0, 0)
         tl.setSpacing(2)
         tl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_inc_total = QLabel("3")
+        self.lbl_inc_total = QLabel("0")
         self.lbl_inc_total.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: bold; font-family: monospace;")
         self.lbl_inc_total.setAlignment(Qt.AlignmentFlag.AlignCenter)
         tl_tag = QLabel("TOTAL")
@@ -222,7 +222,7 @@ class MapInfoPanel(QFrame):
         al.setContentsMargins(0, 0, 0, 0)
         al.setSpacing(2)
         al.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_inc_active = QLabel("3")
+        self.lbl_inc_active = QLabel("0")
         self.lbl_inc_active.setStyleSheet(f"color: {Theme.STATUS_WARNING}; font-size: 18px; font-weight: bold; font-family: monospace;")
         self.lbl_inc_active.setAlignment(Qt.AlignmentFlag.AlignCenter)
         al_tag = QLabel("ACTIVE")

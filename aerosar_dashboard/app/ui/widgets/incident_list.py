@@ -43,8 +43,8 @@ class IncidentRowWidget(QFrame):
         bottom_row.setSpacing(8)
 
         # Short type (e.g. PERSON if PERSON DETECTED)
-        short_type = self.incident.type.replace(" DETECTED", "")
-        conf_percent = int(self.incident.confidence * 100)
+        short_type = self.incident.type
+        conf_percent = int(self.incident.confidence * 100) if self.incident.confidence else 0
         self.type_conf_label = QLabel(f"{short_type}   {conf_percent}%")
         self.type_conf_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 12px; font-weight: 600;")
         bottom_row.addWidget(self.type_conf_label)
@@ -56,6 +56,26 @@ class IncidentRowWidget(QFrame):
         bottom_row.addWidget(self.time_label)
 
         layout.addLayout(bottom_row)
+
+        # Extra row for Evidence and Entity ID
+        extra_row = QHBoxLayout()
+        extra_row.setSpacing(8)
+        
+        # Entity ID (not directly on incident, but if we had it. Let's just put evidence for now or default entity)
+        # The user requested "Entity ID if available". We can check if metadata has it.
+        entity_id = getattr(self.incident, "entity_id", None)
+        if entity_id:
+            ent_lbl = QLabel(entity_id)
+            ent_lbl.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+            extra_row.addWidget(ent_lbl)
+
+        evidence_status = "AVAILABLE" if getattr(self.incident, "evidence_image", None) else "NONE"
+        ev_label = QLabel(f"Evidence: {evidence_status}")
+        ev_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 11px;")
+        extra_row.addWidget(ev_label)
+        extra_row.addStretch()
+
+        layout.addLayout(extra_row)
 
     def _apply_status_badge_style(self):
         st = self.incident.status.upper()

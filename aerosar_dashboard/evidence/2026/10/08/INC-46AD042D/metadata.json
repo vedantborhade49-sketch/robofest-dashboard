@@ -1,0 +1,29 @@
+{
+  "incident_id": "INC-46AD042D",
+  "frame_id": 1,
+  "timestamp": "2026-10-08T09:31:46.430158",
+  "camera_id": "webcam_0",
+  "file_path": "evidence/2026/10/08/INC-46AD042D/frame_000001.jpg",
+  "detection": {
+    "detection_id": "D1",
+    "frame_id": 1,
+    "class_id": 0,
+    "class_name": "person",
+    "confidence": 0.95,
+    "bbox": {
+      "x": 0.5,
+      "y": 0.5,
+      "width": 0.050000000000000044,
+      "height": 0.050000000000000044,
+      "x1": 0.475,
+      "y1": 0.475,
+      "x2": 0.525,
+      "y2": 0.525
+    },
+    "source": "test",
+    "camera_id": "webcam_0",
+    "image_width": 1280,
+    "image_height": 720,
+    "timestamp": "2026-10-08T09:31:46.430158"
+  }
+}

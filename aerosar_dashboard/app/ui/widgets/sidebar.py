@@ -110,8 +110,6 @@ class Sidebar(QWidget):
             ("Overview", "◉"),
             ("Live Feed", "◫"),
             ("Incidents", "⚠"),
-            ("Map", "🗺"),
-            ("Telemetry", "≋"),
             ("Reports", "▤"),
             ("Event Log", "≡"),
             ("Settings", "⚙")

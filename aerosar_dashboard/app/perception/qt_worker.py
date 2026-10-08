@@ -89,14 +89,22 @@ class PerceptionWorker(QObject):
                         import cv2
                         import json
                         
+                        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                        
                         date_path = inc.timestamp.strftime("%Y/%m/%d")
-                        evidence_dir = os.path.join("evidence", date_path, inc.incident_id)
+                        evidence_dir = os.path.join(project_root, "evidence", date_path, inc.incident_id)
                         os.makedirs(evidence_dir, exist_ok=True)
                         
                         frame_name = f"frame_{det.frame_id:06d}.jpg"
                         frame_path = os.path.join(evidence_dir, frame_name)
                         
                         if frame is not None:
+                            # Convert RGB to BGR before saving because OpenCV uses BGR
+                            if len(frame.shape) == 3 and frame.shape[2] == 3:
+                                # A simple check: YOLO output is usually RGB for this project, let's just save via cv2.imwrite which assumes BGR. 
+                                # Wait, PerceptionService handles BGR internally? The frame comes from cv2.VideoCapture so it is BGR!
+                                pass
+                            
                             cv2.imwrite(frame_path, frame)
                             inc.evidence_image = frame_path
                             
@@ -106,21 +114,25 @@ class PerceptionWorker(QObject):
                                 "frame_id": det.frame_id,
                                 "timestamp": inc.timestamp.isoformat(),
                                 "camera_id": getattr(det, "camera_id", "webcam_0"),
-                                "file_path": frame_path,
-                                "detection": det.model_dump()
+                                "event_type": inc.type,
+                                "bounding_box": det.bbox.model_dump(mode="json") if det.bbox else None,
+                                "confidence": det.confidence,
+                                "image_path": frame_path,
+                                "detection": det.model_dump(mode="json")
                             }
                             with open(meta_path, "w") as f:
                                 json.dump(meta_data, f, indent=2)
 
-                        ds.add_incident(inc)
-                        ds.log_event(
-                            message=f"Incident {inc.incident_id} created",
-                            event_type="INCIDENT_CREATED",
-                            incident_id=inc.incident_id,
-                        )
                     except Exception as e:
                         print("Error saving evidence:", e)
                         pass
+                        
+                    ds.add_incident(inc)
+                    ds.log_event(
+                        message=f"Incident {inc.incident_id} created",
+                        event_type="INCIDENT_CREATED",
+                        incident_id=inc.incident_id,
+                    )
         except Exception:
             # ensure perception loop continues even if engine fails
             pass

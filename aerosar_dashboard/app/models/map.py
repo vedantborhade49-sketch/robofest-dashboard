@@ -10,10 +10,10 @@ class SearchBoundary(BaseModel):
 
 class MapState(BaseModel):
     drone_position: Location
-    drone_heading: float = 127.0  # degrees (0° = North, clockwise)
+    drone_heading: float = 0.0  # degrees (0° = North, clockwise)
     trajectory: List[Location] = Field(default_factory=list)
     search_boundary: SearchBoundary = Field(default_factory=SearchBoundary)
-    explored_percentage: float = 42.0
+    explored_percentage: float = 0.0
     explored_polygon: List[Location] = Field(default_factory=list)
     map_status: str = "READY"
     coordinate_frame: str = "LOCAL / SLAM"

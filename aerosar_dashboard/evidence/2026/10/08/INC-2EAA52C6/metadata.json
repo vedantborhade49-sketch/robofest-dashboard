@@ -1,0 +1,29 @@
+{
+  "incident_id": "INC-2EAA52C6",
+  "frame_id": 1,
+  "timestamp": "2026-10-08T09:20:40.405512",
+  "camera_id": "webcam_0",
+  "file_path": "evidence/2026/10/08/INC-2EAA52C6/frame_000001.jpg",
+  "detection": {
+    "detection_id": "D2",
+    "frame_id": 1,
+    "class_id": 0,
+    "class_name": "person",
+    "confidence": 0.95,
+    "bbox": {
+      "x": 0.9,
+      "y": 0.9,
+      "width": 0.050000000000000044,
+      "height": 0.050000000000000044,
+      "x1": 0.875,
+      "y1": 0.875,
+      "x2": 0.925,
+      "y2": 0.925
+    },
+    "source": "test",
+    "camera_id": "webcam_0",
+    "image_width": 1280,
+    "image_height": 720,
+    "timestamp": "2026-10-08T09:20:40.405512"
+  }
+}

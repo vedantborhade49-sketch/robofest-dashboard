@@ -1,0 +1,27 @@
+{
+  "incident_id": "INC-CD7549E5",
+  "frame_id": 1,
+  "timestamp": "2026-10-08T09:19:48.732485",
+  "camera_id": "webcam_0",
+  "file_path": "evidence/2026/10/08/INC-CD7549E5/frame_000001.jpg",
+  "detection": {
+    "detection_id": "D0",
+    "frame_id": 1,
+    "class_id": 0,
+    "class_name": "person",
+    "confidence": 0.95,
+    "bbox": {
+      "x": 0.1,
+      "y": 0.1,
+      "width": 0.04999999999999999,
+      "height": 0.04999999999999999,
+      "x1": 0.07500000000000001,
+      "y1": 0.07500000000000001,
+      "x2": 0.125,
+      "y2": 0.125
+    },
+    "source": "test",
+    "camera_id": "webcam_0",
+    "image_width": 1280,
+    "image_height": 720,
+    "timestamp": 
