@@ -75,18 +75,51 @@ class PerceptionWorker(QObject):
                             assoc.available = True
                     associations.append((det, assoc))
                     
-                incidents = self._incident_engine.process_associations(associations)
+                # process_associations might drop some detections (duplicates).
+                # To easily map back, we'll manually check what was created.
+                created_incidents_with_det = []
+                for det, assoc in associations:
+                    inc = self._incident_engine.process_detection(det, None, assoc=assoc)
+                    if inc:
+                        created_incidents_with_det.append((inc, det))
 
-                for inc in incidents:
+                for inc, det in created_incidents_with_det:
                     try:
+                        import os
+                        import cv2
+                        import json
+                        
+                        date_path = inc.timestamp.strftime("%Y/%m/%d")
+                        evidence_dir = os.path.join("evidence", date_path, inc.incident_id)
+                        os.makedirs(evidence_dir, exist_ok=True)
+                        
+                        frame_name = f"frame_{det.frame_id:06d}.jpg"
+                        frame_path = os.path.join(evidence_dir, frame_name)
+                        
+                        if frame is not None:
+                            cv2.imwrite(frame_path, frame)
+                            inc.evidence_image = frame_path
+                            
+                            meta_path = os.path.join(evidence_dir, "metadata.json")
+                            meta_data = {
+                                "incident_id": inc.incident_id,
+                                "frame_id": det.frame_id,
+                                "timestamp": inc.timestamp.isoformat(),
+                                "camera_id": getattr(det, "camera_id", "webcam_0"),
+                                "file_path": frame_path,
+                                "detection": det.model_dump()
+                            }
+                            with open(meta_path, "w") as f:
+                                json.dump(meta_data, f, indent=2)
+
                         ds.add_incident(inc)
                         ds.log_event(
                             message=f"Incident {inc.incident_id} created",
                             event_type="INCIDENT_CREATED",
                             incident_id=inc.incident_id,
                         )
-                    except Exception:
-                        # swallow per-incident persistence/logging errors
+                    except Exception as e:
+                        print("Error saving evidence:", e)
                         pass
         except Exception:
             # ensure perception loop continues even if engine fails

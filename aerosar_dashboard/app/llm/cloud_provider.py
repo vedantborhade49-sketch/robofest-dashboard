@@ -7,12 +7,20 @@ from app.llm.config import LLMConfig
 
 logger = logging.getLogger(__name__)
 
+import os
+
 class CloudLLMProvider(LLMProvider):
     def __init__(self, config: LLMConfig):
         super().__init__(config)
-        if not self.config.api_key:
+        self.api_key = self.config.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
             logger.warning("CloudLLMProvider initialized without an API key. Generation will likely fail.")
-        self.client = OpenAI(api_key=self.config.api_key)
+            
+        base_url = None
+        if os.getenv("GEMINI_API_KEY") or "gemini" in self.config.model_name.lower():
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+            
+        self.client = OpenAI(api_key=self.api_key, base_url=base_url)
         
     def generate(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         try:

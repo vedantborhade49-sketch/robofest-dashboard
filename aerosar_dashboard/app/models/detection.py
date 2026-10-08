@@ -56,7 +56,8 @@ class Detection(BaseModel):
     class_name: str
     confidence: float
     bbox: BoundingBox
-    source: str = "mock"
+    source: str = "YOLO"
+    camera_id: str = "webcam_0"
     image_width: int = 0
     image_height: int = 0
     timestamp: datetime

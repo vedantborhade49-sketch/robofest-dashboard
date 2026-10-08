@@ -90,18 +90,13 @@ class LiveFeedView(QWidget):
         cam_index = getattr(settings, "perception_camera_index", 0)
         host = getattr(settings, "camera_network_host", "127.0.0.1")
         port = getattr(settings, "camera_network_port", 5000)
-        if type(self.data_service._provider).__name__ == "MockDataProvider":
-            # For tests to avoid cv2.VideoCapture failures
-            from tests.mocks.mock_camera import MockCameraSource
-            source = MockCameraSource()
+        from app.perception.camera import TCPVideoProvider, WebcamSource
+        if getattr(settings, "camera_source", "") == "Network Camera":
+            reconnect_delay = getattr(settings, "camera_reconnect_delay", 2.0)
+            frame_timeout = getattr(settings, "camera_frame_timeout", 2.0)
+            source = TCPVideoProvider(host=host, port=port, reconnect_delay=reconnect_delay, frame_timeout=frame_timeout)
         else:
-            from app.perception.camera import TCPVideoProvider, WebcamSource
-            if getattr(settings, "camera_source", "") == "Network Camera":
-                reconnect_delay = getattr(settings, "camera_reconnect_delay", 2.0)
-                frame_timeout = getattr(settings, "camera_frame_timeout", 2.0)
-                source = TCPVideoProvider(host=host, port=port, reconnect_delay=reconnect_delay, frame_timeout=frame_timeout)
-            else:
-                source = WebcamSource(int(cam_index))
+            source = WebcamSource(int(cam_index))
         
         model_name = getattr(settings, "detection_model", "person_detector")
         model_path = f"{model_name}.pt" if model_name != "person_detector" else "yolov8n.pt"

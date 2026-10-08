@@ -27,7 +27,7 @@ class DashboardSettings(BaseModel):
     show_detection_labels: bool = True
 
     # 4. CAMERA
-    camera_source: str = "Network Camera"
+    camera_source: str = "Local Camera"
     camera_network_host: str = "127.0.0.1"
     camera_network_port: int = 6001
     camera_reconnect_delay: float = 2.0

@@ -45,6 +45,7 @@ class InsightAdapter:
                 center_y=center_y,
                 width=width_bb,
                 height=height_bb,
+                camera_id=frame.camera_id if frame and hasattr(frame, "camera_id") else "webcam_0",
             )
             detections.append(d)
 
